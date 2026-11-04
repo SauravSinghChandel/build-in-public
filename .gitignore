@@ -30,3 +30,8 @@ test-results/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.pnpm-store/
+.e2e-data/
+
+# Playwright MCP browser-test artefacts
+.playwright-mcp/
