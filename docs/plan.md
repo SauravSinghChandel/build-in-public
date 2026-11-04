@@ -389,7 +389,7 @@ pnpm start      # opens http://127.0.0.1:4310 → onboarding: pick agent → add
 |---|---|
 | Project storage | In-repo `.bip/` for all per-project content; small central `app.db` for registry/jobs |
 | `.bip/` vs git | Hidden via `.git/info/exclude` by default; per-project opt-in to commit `context.md` only |
-| Video engine | Decided after the PoC-4 bake-off (HyperFrames vs Remotion) |
+| Video engine | **HyperFrames** (M0 bake-off): renders 36 s vs 54 s, 145 MB vs 561 MB installed, frame-deterministic (Remotion wasn't), Apache-2.0. Compositions are **GSAP-free**: use the CSS/WAAPI adapters (anime.js, three.js, Lottie are allowed). GSAP's licence restricts no-code animation builders, so a lint rule rejects it |
 | v0.1 scope | Projects + context + X/LinkedIn post studio + assisted publishing; images in v0.2, video in v0.3, API publishing later |
 | Agent routing | Ask per task (picker on every agent action; preselects the last-used agent for that task type) |
 | Navigation | Projects / Content / Settings; project tabs Overview / Stories / Media / Context / Settings; studios are full-screen editors |
@@ -397,6 +397,14 @@ pnpm start      # opens http://127.0.0.1:4310 → onboarding: pick agent → add
 | Git identity (repo-local) | Saurav Singh Chandel `<sauravca527@gmail.com>` |
 
 **Deferred decisions (don't block M0–M2):** image presets' exact look (M3), which video styles beyond Clean/Technical (M4), Calendar vs. a Scheduled list (M5), Windows/macOS support (after M6), packaging as `npx` vs clone-only (M6).
+
+## M0 results (2026-11-04) — see `spikes/*/RESULT.md`
+- **Agents: GO.** 10/10 live checks pass. Control run proved a `claude -p` with cwd inside an untrusted repo runs that repo's hooks and MCP servers; the isolated pattern blocks both for Claude and Codex. Cancel and resume work for both.
+- **Drafts:** grounded, but M2's prompt must (1) pick 1–2 angles instead of listing every commit, (2) keep caveats only in `claims_to_verify`, never in the post text, and (3) offer "propose angles → pick → draft".
+- **Image: GO.** Renders in ~350 ms; the fidelity guard catches filters and unmarked overlays; Codex's edit took 44 s and passed. The pixel-diff threshold is 3% because of browser resampling, so the CSS lint carries most of the weight.
+- **Storage: GO with caveats.** 13/13 tests pass. `git clean -fdx` deleting `.bip/` is confirmed. Worktrees share `info/exclude`, so the context opt-in is per repository, not per worktree.
+- **Video: HyperFrames, GSAP-free** (see Decisions). Capture via CDP screencast (sharper than Playwright's video); zooms are driven by measured action timestamps; add a capture-quality gate before rendering.
+- **Environment:** Ubuntu's Node 22 has no TypeScript stripping, so use `tsx` + `tsc`. `corepack pnpm` is broken here (corepack 0.24); use `npx pnpm@10`.
 
 ## Next steps after approval
 1. Run §0 Git commands and verify the remote.

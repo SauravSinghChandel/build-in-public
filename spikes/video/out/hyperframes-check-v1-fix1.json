@@ -1,0 +1,416 @@
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /home/justbuster/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Injected deterministic @font-face rules for 1 requested font families
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)
+[hyperframes] check: samples 1/9
+[hyperframes] check: samples 2/9
+[hyperframes] check: samples 3/9
+[hyperframes] check: samples 4/9
+[hyperframes] check: samples 5/9
+[hyperframes] check: samples 6/9
+[hyperframes] check: samples 7/9
+[hyperframes] check: samples 8/9
+[hyperframes] check: samples 9/9
+[hyperframes] check: craft 1/135
+[hyperframes] check: craft 2/135
+[hyperframes] check: craft 3/135
+[hyperframes] check: craft 4/135
+[hyperframes] check: craft 5/135
+[hyperframes] check: craft 6/135
+[hyperframes] check: craft 7/135
+[hyperframes] check: craft 8/135
+[hyperframes] check: craft 9/135
+[hyperframes] check: craft 10/135
+[hyperframes] check: craft 11/135
+[hyperframes] check: craft 12/135
+[hyperframes] check: craft 13/135
+[hyperframes] check: craft 14/135
+[hyperframes] check: craft 15/135
+[hyperframes] check: craft 16/135
+[hyperframes] check: craft 17/135
+[hyperframes] check: craft 18/135
+[hyperframes] check: craft 19/135
+[hyperframes] check: craft 20/135
+[hyperframes] check: craft 21/135
+[hyperframes] check: craft 22/135
+[hyperframes] check: craft 23/135
+[hyperframes] check: craft 24/135
+[hyperframes] check: craft 25/135
+[hyperframes] check: craft 26/135
+[hyperframes] check: craft 27/135
+[hyperframes] check: craft 28/135
+[hyperframes] check: craft 29/135
+[hyperframes] check: craft 30/135
+[hyperframes] check: craft 31/135
+[hyperframes] check: craft 32/135
+[hyperframes] check: craft 33/135
+[hyperframes] check: craft 34/135
+[hyperframes] check: craft 35/135
+[hyperframes] check: craft 36/135
+[hyperframes] check: craft 37/135
+[hyperframes] check: craft 38/135
+[hyperframes] check: craft 39/135
+[hyperframes] check: craft 40/135
+[hyperframes] check: craft 41/135
+[hyperframes] check: craft 42/135
+[hyperframes] check: craft 43/135
+[hyperframes] check: craft 44/135
+[hyperframes] check: craft 45/135
+[hyperframes] check: craft 46/135
+[hyperframes] check: craft 47/135
+[hyperframes] check: craft 48/135
+[hyperframes] check: craft 49/135
+[hyperframes] check: craft 50/135
+[hyperframes] check: craft 51/135
+[hyperframes] check: craft 52/135
+[hyperframes] check: craft 53/135
+[hyperframes] check: craft 54/135
+[hyperframes] check: craft 55/135
+[hyperframes] check: craft 56/135
+[hyperframes] check: craft 57/135
+[hyperframes] check: craft 58/135
+[hyperframes] check: craft 59/135
+[hyperframes] check: craft 60/135
+[hyperframes] check: craft 61/135
+[hyperframes] check: craft 62/135
+[hyperframes] check: craft 63/135
+[hyperframes] check: craft 64/135
+[hyperframes] check: craft 65/135
+[hyperframes] check: craft 66/135
+[hyperframes] check: craft 67/135
+[hyperframes] check: craft 68/135
+[hyperframes] check: craft 69/135
+[hyperframes] check: craft 70/135
+[hyperframes] check: craft 71/135
+[hyperframes] check: craft 72/135
+[hyperframes] check: craft 73/135
+[hyperframes] check: craft 74/135
+[hyperframes] check: craft 75/135
+[hyperframes] check: craft 76/135
+[hyperframes] check: craft 77/135
+[hyperframes] check: craft 78/135
+[hyperframes] check: craft 79/135
+[hyperframes] check: craft 80/135
+[hyperframes] check: craft 81/135
+[hyperframes] check: craft 82/135
+[hyperframes] check: craft 83/135
+[hyperframes] check: craft 84/135
+[hyperframes] check: craft 85/135
+[hyperframes] check: craft 86/135
+[hyperframes] check: craft 87/135
+[hyperframes] check: craft 88/135
+[hyperframes] check: craft 89/135
+[hyperframes] check: craft 90/135
+[hyperframes] check: craft 91/135
+[hyperframes] check: craft 92/135
+[hyperframes] check: craft 93/135
+[hyperframes] check: craft 94/135
+[hyperframes] check: craft 95/135
+[hyperframes] check: craft 96/135
+[hyperframes] check: craft 97/135
+[hyperframes] check: craft 98/135
+[hyperframes] check: craft 99/135
+[hyperframes] check: craft 100/135
+[hyperframes] check: craft 101/135
+[hyperframes] check: craft 102/135
+[hyperframes] check: craft 103/135
+[hyperframes] check: craft 104/135
+[hyperframes] check: craft 105/135
+[hyperframes] check: craft 106/135
+[hyperframes] check: craft 107/135
+[hyperframes] check: craft 108/135
+[hyperframes] check: craft 109/135
+[hyperframes] check: craft 110/135
+[hyperframes] check: craft 111/135
+[hyperframes] check: craft 112/135
+[hyperframes] check: craft 113/135
+[hyperframes] check: craft 114/135
+[hyperframes] check: craft 115/135
+[hyperframes] check: craft 116/135
+[hyperframes] check: craft 117/135
+[hyperframes] check: craft 118/135
+[hyperframes] check: craft 119/135
+[hyperframes] check: craft 120/135
+[hyperframes] check: craft 121/135
+[hyperframes] check: craft 122/135
+[hyperframes] check: craft 123/135
+[hyperframes] check: craft 124/135
+[hyperframes] check: craft 125/135
+[hyperframes] check: craft 126/135
+[hyperframes] check: craft 127/135
+[hyperframes] check: craft 128/135
+[hyperframes] check: craft 129/135
+[hyperframes] check: craft 130/135
+[hyperframes] check: craft 131/135
+[hyperframes] check: craft 132/135
+[hyperframes] check: craft 133/135
+[hyperframes] check: craft 134/135
+[hyperframes] check: craft 135/135
+[hyperframes] check: overlap 1/17
+[hyperframes] check: overlap 2/17
+[hyperframes] check: overlap 3/17
+[hyperframes] check: overlap 4/17
+[hyperframes] check: overlap 5/17
+[hyperframes] check: overlap 6/17
+[hyperframes] check: overlap 7/17
+[hyperframes] check: overlap 8/17
+[hyperframes] check: overlap 9/17
+[hyperframes] check: overlap 10/17
+[hyperframes] check: overlap 11/17
+[hyperframes] check: overlap 12/17
+[hyperframes] check: overlap 13/17
+[hyperframes] check: overlap 14/17
+[hyperframes] check: overlap 15/17
+[hyperframes] check: overlap 16/17
+[hyperframes] check: overlap 17/17
+[hyperframes] check: analyze 0/3
+[hyperframes] check: analyze 1/3
+[hyperframes] check: analyze 2/3
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 2,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"intro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#intro",
+        "dataAttributes": {},
+        "sourceFile": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"intro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"outro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#outro",
+        "dataAttributes": {},
+        "sourceFile": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"outro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 16.8,
+    "samples": [
+      0.933,
+      2.8,
+      4.667,
+      6.533,
+      8.4,
+      10.267,
+      12.133,
+      14,
+      15.867
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0.933,
+      4.667,
+      8.4,
+      12.133,
+      15.867
+    ],
+    "checked": 6,
+    "passed": 6
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 4,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 2 text elements stay under it for 0.5 s or more, the smallest \"BUILD / SHIP / SHARE\" at 24 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "BUILD / SHIP / SHARE",
+        "selector": "#intro > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 765.06,
+          "y": 387,
+          "width": 389.88,
+          "height": 29
+        },
+        "time": 0,
+        "times": [
+          0,
+          14.809
+        ],
+        "fontPx": 24,
+        "floorPx": 28,
+        "seconds": 2.613,
+        "elements": [
+          {
+            "selector": "#intro > div:nth-of-type(1)",
+            "text": "BUILD / SHIP / SHARE",
+            "fontPx": 24,
+            "time": 0,
+            "seconds": 2.613
+          },
+          {
+            "selector": "#outro > div:nth-of-type(1)",
+            "text": "BUILD / SHIP / SHARE",
+            "fontPx": 24,
+            "time": 14.809,
+            "seconds": 1.991
+          }
+        ]
+      },
+      {
+        "code": "film_silent",
+        "severity": "warning",
+        "message": "This 17 s film has no sound source (no <audio>, no <video> with sound): add a music bed and sounds on the visible actions unless the person asked for silence; see references/sound.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"yourdomain.dev\" (2 words) is on screen 1.93 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "yourdomain.dev",
+        "selector": "#outro-title",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 548.42,
+          "y": 453.29,
+          "width": 823.16,
+          "height": 135.99999999999994
+        },
+        "time": 14.871,
+        "words": 2,
+        "seconds": 1.933,
+        "floorSeconds": 2
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Made to explore. Built to last.\" (6 words) is on screen 1.73 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Made to explore. Built to last.",
+        "selector": "#outro-sub",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 726.92,
+          "y": 606,
+          "width": 466.15999999999997,
+          "height": 41
+        },
+        "time": 15.074,
+        "words": 6,
+        "seconds": 1.73,
+        "floorSeconds": 2
+      }
+    ],
+    "enabled": true,
+    "step": 0.12400000000000055,
+    "samples": 135
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "audio_none",
+        "severity": "info",
+        "message": "The film has no sound: no clip in it plays audio.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      }
+    ]
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "saved": {
+    "id": "1e707d10-c671-44c0-9369-6b94521c2573",
+    "revision": null,
+    "report": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/.hyperframes/artifacts/checks/1e707d10-c671-44c0-9369-6b94521c2573.json",
+    "attribution": "unversioned"
+  },
+  "_meta": {
+    "version": "0.9.13",
+    "updateAvailable": false
+  }
+}

@@ -1,0 +1,250 @@
+{
+  "capture": {
+    "cdp": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1440,
+          "height": 900,
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "nb_frames": "390"
+        }
+      ],
+      "format": {
+        "duration": "13.000000",
+        "size": "2492276",
+        "bit_rate": "1533708"
+      }
+    },
+    "playwright": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "vp8",
+          "width": 1440,
+          "height": 900,
+          "r_frame_rate": "25/1",
+          "avg_frame_rate": "25/1"
+        }
+      ],
+      "format": {
+        "duration": "14.720000",
+        "size": "1983886",
+        "bit_rate": "1078198"
+      }
+    },
+    "cdpDistinctFrames": 201,
+    "cdpEffectiveFps": 15.461538461538462,
+    "cdpMaxGap": 0.4333162307739258,
+    "cdpP95Gap": 0.2833218574523926,
+    "cdpTimestampSpan": 12.929717063903809,
+    "events": 58,
+    "clicks": [
+      {
+        "type": "click",
+        "t": 6.346100000023842,
+        "x": 517,
+        "y": 35,
+        "scrollY": 0
+      },
+      {
+        "type": "click",
+        "t": 7.67320000001788,
+        "x": 615,
+        "y": 35,
+        "scrollY": 5428
+      }
+    ],
+    "actions": [
+      {
+        "label": "land",
+        "t": 0.2017163519999999
+      },
+      {
+        "label": "hover Projects",
+        "t": 1.3998631380000002
+      },
+      {
+        "label": "click Projects",
+        "t": 4.858641565
+      },
+      {
+        "label": "long scroll start",
+        "t": 6.661368423999999
+      },
+      {
+        "label": "scroll further",
+        "t": 7.167612652000001
+      },
+      {
+        "label": "hover Experience",
+        "t": 7.553620851000001
+      },
+      {
+        "label": "click Experience",
+        "t": 7.627330129999999
+      },
+      {
+        "label": "scroll back up",
+        "t": 10.199830668999999
+      },
+      {
+        "label": "home hold",
+        "t": 12.00043837
+      },
+      {
+        "label": "end",
+        "t": 13.002450008
+      }
+    ]
+  },
+  "engines": {
+    "hyperframes": {
+      "v1": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "504"
+          }
+        ],
+        "format": {
+          "duration": "16.800000",
+          "size": "2739517",
+          "bit_rate": "1304531"
+        },
+        "wallSeconds": 36.083755796,
+        "frame150md5": "MD5=dc51216250b8f052632e99a8b38ab9e9"
+      },
+      "v2": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "450"
+          }
+        ],
+        "format": {
+          "duration": "15.000000",
+          "size": "2683740",
+          "bit_rate": "1431328"
+        },
+        "wallSeconds": 30.722404054,
+        "frame150md5": "MD5=a2a8f7701f131a50707df0b065f537c7"
+      },
+      "v2-repeat": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "450"
+          }
+        ],
+        "format": {
+          "duration": "15.000000",
+          "size": "2682965",
+          "bit_rate": "1430914"
+        },
+        "wallSeconds": 30.980961933,
+        "frame150md5": "MD5=a2a8f7701f131a50707df0b065f537c7"
+      },
+      "installSize": "145M\thyperframes/node_modules",
+      "revisionStat": " index.html    | 20 ++++++++++----------\n settings.json |  6 +++---\n 2 files changed, 13 insertions(+), 13 deletions(-)\n"
+    },
+    "remotion": {
+      "v1": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "504",
+            "side_data_list": [
+              {}
+            ]
+          }
+        ],
+        "format": {
+          "duration": "16.800000",
+          "size": "2702839",
+          "bit_rate": "1287066"
+        },
+        "wallSeconds": 53.716961769,
+        "frame150md5": "MD5=75887b277acac2e777d6aa01e77b29ae"
+      },
+      "v2": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "450",
+            "side_data_list": [
+              {}
+            ]
+          }
+        ],
+        "format": {
+          "duration": "15.000000",
+          "size": "2649789",
+          "bit_rate": "1413220"
+        },
+        "wallSeconds": 48.182651648,
+        "frame150md5": "MD5=58679e1d4c9bb2fd9114959603f56bc3"
+      },
+      "v2-repeat": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "450",
+            "side_data_list": [
+              {}
+            ]
+          }
+        ],
+        "format": {
+          "duration": "15.000000",
+          "size": "2631871",
+          "bit_rate": "1403664"
+        },
+        "wallSeconds": 48.843740359,
+        "frame150md5": "MD5=ec85913bd1d7d7fe5faa098f24514766"
+      },
+      "installSize": "561M\tremotion/node_modules",
+      "revisionStat": " settings.json | 6 +++---\n 1 file changed, 3 insertions(+), 3 deletions(-)\n"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+import {chromium} from 'playwright';
+const b=await chromium.launch({headless:true,executablePath:'/home/justbuster/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',chromiumSandbox:false});const p=await b.newPage({viewport:{width:1440,height:900}});await p.goto('http://127.0.0.1:4317');console.log(await p.locator('a').evaluateAll(a=>a.map(x=>({text:x.innerText,href:x.getAttribute('href')}))));await p.screenshot({path:'out/capture/home.png'});await b.close();

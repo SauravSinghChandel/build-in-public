@@ -1,0 +1,13 @@
+diff --git a/settings.json b/settings.json
+index 7e45a9e..651197e 100644
+--- a/settings.json
++++ b/settings.json
+@@ -1,5 +1,5 @@
+ {
+-  "intro": 2.5,
+-  "zoomReturn": 0.5,
+-  "outroAdvance": 0
++  "intro": 1.2,
++  "zoomReturn": 0.65,
++  "outroAdvance": 0.5
+ }

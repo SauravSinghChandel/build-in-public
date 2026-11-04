@@ -1,0 +1,6 @@
+539b1adfc8996b40ce4feb53579f7787b338480fccc37ff2ecd471f1c4e6c7fb  spikes/video/out/capture/raw.mp4
+539b1adfc8996b40ce4feb53579f7787b338480fccc37ff2ecd471f1c4e6c7fb  spikes/video/hyperframes/assets/raw.mp4
+539b1adfc8996b40ce4feb53579f7787b338480fccc37ff2ecd471f1c4e6c7fb  spikes/video/remotion/public/raw.mp4
+efca074bbe7d0dfdbade05e702f59c3b5567bec5d4fa189e3a9225ebc1b4705e  spikes/video/out/capture/events.json
+efca074bbe7d0dfdbade05e702f59c3b5567bec5d4fa189e3a9225ebc1b4705e  spikes/video/hyperframes/assets/events.json
+efca074bbe7d0dfdbade05e702f59c3b5567bec5d4fa189e3a9225ebc1b4705e  spikes/video/remotion/public/events.json

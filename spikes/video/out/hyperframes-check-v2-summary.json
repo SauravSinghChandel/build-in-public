@@ -1,0 +1,253 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 2,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"intro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#intro",
+        "dataAttributes": {},
+        "sourceFile": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"intro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"outro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#outro",
+        "dataAttributes": {},
+        "sourceFile": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"outro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 15,
+    "samples": [
+      0.833,
+      2.5,
+      4.167,
+      5.833,
+      7.5,
+      9.167,
+      10.833,
+      12.5,
+      14.167
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0.833,
+      4.167,
+      7.5,
+      10.833,
+      14.167
+    ],
+    "checked": 6,
+    "passed": 6
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 4,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 2 text elements stay under it for 0.5 s or more, the smallest \"BUILD / SHIP / SHARE\" at 24 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "BUILD / SHIP / SHARE",
+        "selector": "#intro > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 765.06,
+          "y": 387,
+          "width": 389.88,
+          "height": 29
+        },
+        "time": 0,
+        "times": [
+          0,
+          13
+        ],
+        "fontPx": 24,
+        "floorPx": 28,
+        "seconds": 1.25,
+        "elements": [
+          {
+            "selector": "#intro > div:nth-of-type(1)",
+            "text": "BUILD / SHIP / SHARE",
+            "fontPx": 24,
+            "time": 0,
+            "seconds": 1.25
+          },
+          {
+            "selector": "#outro > div:nth-of-type(1)",
+            "text": "BUILD / SHIP / SHARE",
+            "fontPx": 24,
+            "time": 13,
+            "seconds": 2
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Rebuilt with Next.js\" (4 words) is on screen 0.93 s (\u00b10.01 s), under its 1.27 s floor: hold it about 0.5 s + 0.3 s a word (1.70 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Rebuilt with Next.js",
+        "selector": "#intro-sub",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 806.17,
+          "y": 606,
+          "width": 307.64,
+          "height": 41
+        },
+        "time": 0.273,
+        "words": 4,
+        "seconds": 0.93,
+        "floorSeconds": 1.275
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"yourdomain.dev\" (2 words) is on screen 1.93 s (\u00b10.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "yourdomain.dev",
+        "selector": "#outro-title",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 548.42,
+          "y": 453.29,
+          "width": 823.16,
+          "height": 135.99999999999994
+        },
+        "time": 13.07,
+        "words": 2,
+        "seconds": 1.934,
+        "floorSeconds": 2
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Made to explore. Built to last.\" (6 words) is on screen 1.73 s (\u00b10.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Made to explore. Built to last.",
+        "selector": "#outro-sub",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 726.92,
+          "y": 606,
+          "width": 466.15999999999997,
+          "height": 41
+        },
+        "time": 13.273,
+        "words": 6,
+        "seconds": 1.73,
+        "floorSeconds": 2
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 120
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "audio_none",
+        "severity": "info",
+        "message": "The film has no sound: no clip in it plays audio.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      }
+    ]
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "saved": {
+    "id": "5b015e95-61ff-43e1-b66e-5df69073d502",
+    "revision": "0523da3e-90bd-4dfd-adc0-0095382e9b03",
+    "report": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/.hyperframes/artifacts/checks/5b015e95-61ff-43e1-b66e-5df69073d502.json",
+    "attribution": "recorded-revision"
+  },
+  "_meta": {
+    "version": "0.9.13",
+    "updateAvailable": false
+  }
+}

@@ -1,0 +1,8 @@
+import {spawn,spawnSync} from 'node:child_process';
+import fs from 'node:fs/promises';
+process.chdir(new URL('.',import.meta.url).pathname);
+const env={...process.env,TMPDIR:'/tmp/bip-spike-video',XDG_CONFIG_HOME:'/tmp/bip-spike-video/config',XDG_STATE_HOME:'/tmp/bip-spike-video/state',HYPERFRAMES_NO_TELEMETRY:'1',HYPERFRAMES_BROWSER_PATH:'/home/justbuster/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome'};
+function run(cmd,args,dir='.'){const p=spawnSync(cmd,args,{cwd:dir,env,stdio:'inherit'});if(p.status!==0)throw Error(`${cmd} exited ${p.status}`)}
+await fs.mkdir('/tmp/bip-spike-video/config',{recursive:true});await fs.cp('/home/justbuster/projects/portfolio/out','/tmp/bip-spike-video/site',{recursive:true});
+let server;try{await fetch('http://127.0.0.1:4317')}catch{server=spawn('python3',['-m','http.server','4317','--bind','127.0.0.1','--directory','/tmp/bip-spike-video/site'],{env,stdio:'ignore'});await new Promise(r=>setTimeout(r,600));}
+try{for(const dir of ['.','hyperframes','remotion'])run('npm',['ci'],dir);run('npx',['playwright','install','ffmpeg']);run('node',['capture.mjs']);await fs.copyFile('out/capture/cdp.mp4','out/capture/raw.mp4');run('node',['author.mjs']);run('node',['build.mjs'],'hyperframes');run('node',['render.mjs','hyperframes','v1']);run('node',['render.mjs','remotion','v1']);run('node',['revise.mjs']);run('npx',['hyperframes','check','--json'],'hyperframes');run('node',['render.mjs','hyperframes','v2']);run('node',['render.mjs','remotion','v2']);run('node',['render.mjs','hyperframes','v2','-repeat']);run('node',['render.mjs','remotion','v2','-repeat']);run('node',['audit.mjs']);run('node',['report.mjs']);}finally{server?.kill();}
