@@ -1,0 +1,6 @@
+node_modules/
+# Exact generated files over 20 MiB (updated by verify.mjs).
+out/large-files/
+
+out/compositions/*/
+!out/compositions/snapshots/
