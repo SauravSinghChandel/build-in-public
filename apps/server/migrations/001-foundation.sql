@@ -1,0 +1,4 @@
+CREATE TABLE tracked_dirs(id TEXT PRIMARY KEY,path TEXT NOT NULL UNIQUE,depth INTEGER NOT NULL DEFAULT 2,last_scanned_at TEXT);
+CREATE TABLE projects(id TEXT PRIMARY KEY,path TEXT NOT NULL UNIQUE,root_commit TEXT NOT NULL,remote_url TEXT,status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','missing','archived')),tracked_dir_id TEXT REFERENCES tracked_dirs(id) ON DELETE SET NULL,added_at TEXT NOT NULL);
+CREATE TABLE jobs(id TEXT PRIMARY KEY,type TEXT NOT NULL,status TEXT NOT NULL,project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,resource_key TEXT,payload_json TEXT,result_json TEXT,error TEXT,progress REAL,attempts INTEGER DEFAULT 0,created_at TEXT,started_at TEXT,finished_at TEXT);
+CREATE TABLE agent_runs(id TEXT PRIMARY KEY,job_id TEXT REFERENCES jobs(id),provider TEXT NOT NULL,model TEXT,session_id TEXT,cwd TEXT,log_path TEXT,cost_usd REAL,exit_code INTEGER);

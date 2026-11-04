@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true
+  },
+  "include": [
+    "e2e/**/*.ts",
+    "../playwright.config.ts",
+    "../apps/server/src/**/*.test.ts"
+  ]
+}
