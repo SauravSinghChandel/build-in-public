@@ -1,0 +1,72 @@
+TAP version 13
+# (node:29) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: claude: chunked fixture, result/session/tool/text
+ok 1 - claude: chunked fixture, result/session/tool/text
+  ---
+  duration_ms: 10.6925
+  type: 'test'
+  ...
+# Subtest: codex: chunked fixture, result/session/tool/text
+ok 2 - codex: chunked fixture, result/session/tool/text
+  ---
+  duration_ms: 3.031342
+  type: 'test'
+  ...
+# Subtest: malformed JSON and unterminated final line are handled
+ok 3 - malformed JSON and unterminated final line are handled
+  ---
+  duration_ms: 0.425445
+  type: 'test'
+  ...
+# Subtest: provider failure events cannot be mistaken for success
+ok 4 - provider failure events cannot be mistaken for success
+  ---
+  duration_ms: 0.238466
+  type: 'test'
+  ...
+# Subtest: schema validates actual shape, rejects extra fields and missing properties
+ok 5 - schema validates actual shape, rejects extra fields and missing properties
+  ---
+  duration_ms: 27.961755
+  type: 'test'
+  ...
+# Subtest: X weighted length, thread count, LinkedIn limits and hashtag checks
+ok 6 - X weighted length, thread count, LinkedIn limits and hashtag checks
+  ---
+  duration_ms: 20.678201
+  type: 'test'
+  ...
+# Subtest: args keep prompt atomic, budget every Claude call, exec options before resume
+ok 7 - args keep prompt atomic, budget every Claude call, exec options before resume
+  ---
+  duration_ms: 0.427328
+  type: 'test'
+  ...
+# Subtest: harness streams events and final exit, not just parser output
+ok 8 - harness streams events and final exit, not just parser output
+  ---
+  duration_ms: 102.331457
+  type: 'test'
+  ...
+# Subtest: AbortSignal escalates SIGINT to SIGTERM after 2s and reaps process
+ok 9 - AbortSignal escalates SIGINT to SIGTERM after 2s and reaps process
+  ---
+  duration_ms: 2310.11344
+  type: 'test'
+  ...
+# Subtest: missing executable emits error and terminal result
+ok 10 - missing executable emits error and terminal result
+  ---
+  duration_ms: 5.85223
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2747.379095

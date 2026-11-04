@@ -1,0 +1,109 @@
+{
+  "startedAt": "2026-11-04T20:06:23.647Z",
+  "probe": true,
+  "versions": {
+    "node": "v22.22.1",
+    "claude": "2.1.318 (Claude Code)",
+    "codex": "codex-cli 0.166.0"
+  },
+  "checks": [
+    {
+      "id": "claude-isolation",
+      "status": "PASS",
+      "evidence": {
+        "startupMs": 716.02405,
+        "totalMs": 5627.137108,
+        "exitCode": 0,
+        "canaries": [],
+        "schema": {
+          "valid": true,
+          "errors": []
+        },
+        "errors": []
+      }
+    },
+    {
+      "id": "codex-isolation",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "control",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "claude-cancel",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "codex-cancel",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "claude-resume",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "codex-resume",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "claude-draft",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "codex-draft",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    },
+    {
+      "id": "claude-rewrite",
+      "status": "PENDING",
+      "evidence": "Probe only; run full suite outside sandbox."
+    }
+  ],
+  "runs": {
+    "claude-isolation": {
+      "type": "result",
+      "final": true,
+      "sessionId": "27b3e913-00de-4cec-aac0-5e20106fef1a",
+      "structuredOutput": {
+        "summary": "Canary Harbor is a fake local project for tracking paper boats and their launch dates. The README has only a title and that one sentence, with no setup or usage instructions and no other content."
+      },
+      "completed": true,
+      "costUsd": 0.1756946,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 716.02405,
+      "totalMs": 5627.137108,
+      "errors": [],
+      "canaries": []
+    }
+  },
+  "drafts": {},
+  "claudeCalls": 1,
+  "context": {
+    "commitCount": 8,
+    "hashes": [
+      "d60d058da412b15f50d0739061661cdb4e638eb2",
+      "602435b3a34926ca5d55d1276cf4ef4e16bb6d03",
+      "f520517e0a36cb066c9be2228eddf2c810760abf",
+      "bb7f6838d40a0ec60450648a2abbeb2e32f9ffcc",
+      "c1bb84b2213b5c821b6d539017a05213835a6b05",
+      "54d83619e7fc2550bff5dbc6f4df780447c9c085",
+      "0bf80ab5d99606da51f83452b340b0c9c6770274",
+      "2646d998db4e9bc633be2d38cb280288a6940fc8"
+    ],
+    "bytes": 14653,
+    "destination": "/home/justbuster/projects/build-in-public/spikes/agents/out/context-bundle.txt"
+  },
+  "finishedAt": "2026-11-04T20:06:29.583Z"
+}

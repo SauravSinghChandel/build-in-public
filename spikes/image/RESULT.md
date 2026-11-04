@@ -49,3 +49,7 @@ node spikes/image/capture.mjs
 # Optional exact second CLI attempt; may edit the composition if startup succeeds:
 bash spikes/image/agent-edit.sh
 ```
+
+## Reviewer notes (live agent edit on host, 2026-11-04)
+- The sandbox failure was only nested-Codex startup (read-only `~/.codex`). On the host, `codex exec -s workspace-write -C <copy of launch-1 at "initial">` made the requested edit in **44 s**, touching only composition.json/index.html/styles.css (+10/−4). The annotation was placed outside the screenshot. Render 343 ms; fidelity **PASS** (2.418% vs 3% limit, no lint errors). Output: `out/renders/launch-agent-edit.png`, source snapshot `out/compositions/snapshots/launch-agent/`.
+- Updated verdict: **GO**.

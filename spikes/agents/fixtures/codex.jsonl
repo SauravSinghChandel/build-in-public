@@ -1,0 +1,6 @@
+{"type":"thread.started","thread_id":"codex-fixture"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"cat README.md","status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"cat README.md","aggregated_output":"# Canary Harbor","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"{\"summary\":\"paper boats\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":0,"output_tokens":12}}

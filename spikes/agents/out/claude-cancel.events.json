@@ -1,0 +1,24 @@
+[
+  {
+    "type": "error",
+    "message": "[ede_diagnostic] result_type=user last_content_type=n/a stop_reason=null"
+  },
+  {
+    "type": "result",
+    "final": true,
+    "sessionId": "fe031e55-46d9-4af6-b475-d25d0c53d41d",
+    "structuredOutput": null,
+    "completed": false,
+    "costUsd": 0,
+    "exitCode": 0,
+    "exitSignal": null,
+    "cancelled": true,
+    "stderr": "",
+    "startupMs": 661.6154800000004,
+    "totalMs": 3706.619197,
+    "errors": [
+      "[ede_diagnostic] result_type=user last_content_type=n/a stop_reason=null"
+    ],
+    "canaries": []
+  }
+]

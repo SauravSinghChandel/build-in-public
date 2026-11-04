@@ -1,0 +1,1 @@
+{"name":"bip-agents-spike","private":true,"type":"module","scripts":{"test":"node --test test.mjs","live":"node run-all.mjs"},"dependencies":{"ajv":"8.17.1","twitter-text":"3.1.0"}}
