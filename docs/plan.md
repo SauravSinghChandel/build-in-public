@@ -248,7 +248,7 @@ accounts(id, platform, handle, keychain_ref, scopes, expires_at)          -- M5
 
 **Auth (verified against current docs):**
 - Anthropic's legal page explicitly allows *"an end user … signing in to the unmodified Claude Code binary with their own Claude subscription"*, and forbids third-party apps from offering Claude.ai login or handling Claude credentials. So BIP **never** touches tokens: each user runs `claude` / `codex login` themselves; BIP only spawns the binaries they installed. `--bare` is avoided by default because it ignores subscription login.
-- Since 15 Jun 2026, `claude -p`/Agent SDK usage on a subscription draws from a separate monthly **Agent SDK credit**, not interactive limits; overflow needs "extra usage" enabled. BIP surfaces `total_cost_usd` per run and supports `--max-budget-usd`.
+- Usage: per Anthropic's help article (updated Oct 2026), `claude -p` signed in with a Claude plan **draws from normal subscription limits**. The separate "Agent SDK credit" announced for 15 Jun 2026 was paused; Max/Ultra/Team monthly API credits apply only when using a Console API key. BIP shows each run's estimated `total_cost_usd` for visibility.
 - Codex docs call ChatGPT-login automation an "advanced option for trusted runners"; a personal machine qualifies. `CODEX_API_KEY` also works.
 - Optional "API key mode" for each provider later (Anthropic/OpenAI keys in keychain).
 
@@ -351,7 +351,7 @@ Tests are written alongside each milestone (not deferred to M6): unit tests for 
 
 | Risk | Why it's hard | Mitigation / PoC |
 |---|---|---|
-| Agent auth & policy | Rules changed twice in 2026; credit metering | Spawn unmodified CLIs only; show cost per run; API-key mode as fallback; doctor checks versions |
+| Agent auth & policy | Rules changed several times in 2026 | Spawn unmodified CLIs only; show cost per run; API-key mode as fallback; doctor checks versions |
 | Repo prompt-injection / hook execution | Non-bare `claude -p` loads project settings/hooks/MCP | Never cwd into repos; canary test in PoC-1 |
 | CLI output drift | stream-json/`--json` event shapes change between versions | Normalize in adapters; recorded-fixture tests; min-version check |
 | Video quality judged by agents | Agents can't "watch" video | Frame contact sheets + lint + human preview loop; keep edits small |
