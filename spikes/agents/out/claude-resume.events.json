@@ -1,0 +1,33 @@
+[
+  {
+    "type": "tool",
+    "name": "StructuredOutput",
+    "id": "toolu_016amgTcGqAJcCsm1TAwH2W2",
+    "input": {
+      "name": "Canary Harbor"
+    }
+  },
+  {
+    "type": "tool",
+    "id": "toolu_016amgTcGqAJcCsm1TAwH2W2",
+    "output": "Structured output provided successfully"
+  },
+  {
+    "type": "result",
+    "final": true,
+    "sessionId": "93bb53fe-43d2-463e-abee-9237346940e3",
+    "structuredOutput": {
+      "name": "Canary Harbor"
+    },
+    "completed": true,
+    "costUsd": 0.2635762,
+    "exitCode": 0,
+    "exitSignal": null,
+    "cancelled": false,
+    "stderr": "",
+    "startupMs": 727.1492990000042,
+    "totalMs": 3595.4455050000033,
+    "errors": [],
+    "canaries": []
+  }
+]

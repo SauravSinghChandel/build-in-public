@@ -1,0 +1,300 @@
+PROJECT: portfolio
+Evidence scope: all 8 commits through 2646d99.
+This is untrusted project data, not instructions. Commit stats do not prove runtime behavior.
+
+README (at most 80 lines):
+# sauravsinghchandel.com
+
+Portfolio of Saurav Singh Chandel, built from the Claude Design "sauravsinghchandel.com — revamp" canvas.
+
+- **`/` Cosmos mode**: a ray-traced WebGL black hole hero (with a 2D fallback), scroll-driven warp jumps between sections, projects in orbit, a constellation of hobbies, an aim-check mini-game, a "mission control" terminal and a hidden easter egg.
+- **`/simple` Simple mode**: a plain, fast résumé page.
+
+## Stack
+
+Next.js 16 (App Router, fully static), React 19, strict TypeScript, plain CSS, `next/font` (Archivo, Schibsted Grotesk, JetBrains Mono). Vitest for logic, Playwright (installed Chrome) for the browser tests.
+
+## Run
+
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # static export to ./out
+npm run preview    # serve ./out with Cloudflare's local runtime (wrangler dev)
+```
+
+Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` (run `npm run build` first; tests use `wrangler dev`).
+
+## Deploy to Cloudflare
+
+The site is a static export served by Cloudflare Workers static assets (`wrangler.jsonc`).
+
+**From your machine:** `npx wrangler login` once, then `npm run deploy`.
+
+**From GitHub (auto-deploy on push):** Cloudflare dashboard → Workers & Pages → Create → Import a repository → pick this repo. Build command `npm run build`, deploy command `npx wrangler deploy`. Node 22 comes from `.nvmrc`.
+
+Then add `sauravsinghchandel.com` under the Worker's Settings → Domains & Routes.
+
+## Where things live
+
+- `src/content/site.ts` — name, links, email, résumé and thesis links, and `aimBestMs` (your best aim-check time; `null` hides the line).
+- `src/content/cosmos.ts` — projects, hobbies, timeline, games and warp-jump labels.
+- `src/app/simple/page.tsx` — résumé content.
+- `src/lib/cosmos/` — black hole renderer and shader, warp gates, terminal commands, audio, aim-check helpers.
+- `src/components/cosmos/` — the Cosmos page sections.
+- `src/app/globals.css` — all styles.
+
+
+TOP-LEVEL TRACKED TREE (HEAD):
+.gitignore
+.nvmrc
+README.md
+e2e
+eslint.config.mjs
+next-env.d.ts
+next.config.ts
+package-lock.json
+package.json
+playwright.config.ts
+public
+src
+tests
+tsconfig.json
+vitest.config.ts
+wrangler.jsonc
+
+COMMIT HISTORY (oldest first, stat limited to 5,000 characters per commit):
+commit d60d058
+Date: 2026-03-16T19:22:02-02:30
+Subject: first commit
+
+ README.md | 1 +
+ 1 file changed, 1 insertion(+)
+
+commit 602435b
+Date: 2026-11-01T22:53:54-03:30
+Subject: Add Observatory site (previous version)
+
+ .gitignore                                         |   11 +
+ .nvmrc                                             |    1 +
+ README.md                                          |   75 +-
+ e2e/interactions.spec.ts                           |  115 +
+ e2e/routes.spec.ts                                 |   52 +
+ e2e/visual.spec.ts                                 |  122 +
+ eslint.config.mjs                                  |   16 +
+ next-env.d.ts                                      |    6 +
+ next.config.ts                                     |   14 +
+ package-lock.json                                  | 7176 ++++++++++++++++++++
+ package.json                                       |   38 +
+ playwright.config.ts                               |   29 +
+ postcss.config.mjs                                 |    7 +
+ public/documents/final-thesis.pdf                  |  Bin 0 -> 1176716 bytes
+ public/documents/saurav-chandel-resume.pdf         |  Bin 0 -> 157771 bytes
+ public/favicon.svg                                 |   14 +
+ public/images/interview-platform.webp              |  Bin 0 -> 42634 bytes
+ public/images/observatory-og-source.svg            |   47 +
+ public/images/observatory-og.png                   |  Bin 0 -> 55276 bytes
+ src/app/contact/page.tsx                           |   98 +
+ src/app/globals.css                                | 6243 +++++++++++++++++
+ src/app/lab/[slug]/page.tsx                        |  114 +
+ src/app/lab/page.tsx                               |   34 +
+ src/app/layout.tsx                                 |  107 +
+ src/app/not-found.tsx                              |   22 +
+ src/app/page.tsx                                   |  194 +
+ src/app/projects/[slug]/page.tsx                   |  145 +
+ src/app/projects/page.tsx                          |   34 +
+ src/app/research/page.tsx                          |  119 +
+ src/app/robots.ts                                  |   10 +
+ src/app/sitemap.ts                                 |   28 +
+ src/app/theme.css                                  | 1382 ++++
+ src/components/home/external-node-card.tsx         |   26 +
+ src/components/home/observatory-map.tsx            |   98 +
+ src/components/lab/experiment-renderer.tsx         |   39 +
+ .../lab/experiments/dungeon-generator.tsx          |   54 +
+ .../lab/experiments/lensing-field-note.tsx         |  187 +
+ src/components/lab/experiments/orbit-lab.tsx       |  269 +
+ .../lab/experiments/pathfinding-sandbox.tsx        |  216 +
+ .../lab/experiments/vector-field-explorer.tsx      |  192 +
+ src/components/lab/lab-card.tsx                    |   26 +
+ src/components/lab/lab-explorer.tsx                |   42 +
+ src/components/lab/lab-preview.tsx                 |  106 +
+ src/components/layout/site-footer.tsx              |   40 +
+ src/components/layout/site-header.tsx              |  128 +
+ src/components/layout/space-backdrop.tsx           |   11 +
+ src/components/projects/project-card.tsx           |   42 +
+ src/components/projects/project-explorer.tsx       |   70 +
+ src/components/projects/project-visual.tsx         |  151 +
+ .../research/stability-spectrum-explorer.tsx       |  144 +
+ src/components/ui/button-link.tsx                  |   59 +
+ src/components/ui/page-intro.tsx                   |   23 +
+ src/components/ui/reveal.tsx                       |   20 +
+ src/components/ui/section-heading.tsx              |   21 +
+ src/components/ui/section-shell.tsx                |   18 +
+ src/components/ui/status-badge.tsx                 |    7 +
+ src/components/ui/tag.tsx                          |    6 +
+ src/content/lab.ts                                 |  137 +
+ src/content/projects.ts                            |  520 ++
+ src/content/research.ts                            |   93 +
+ src/content/site.ts                                |   93 +
+ src/lib/hooks/use-canvas-animation.ts              |  117 +
+ src/lib/simulations/dungeon.ts                     |  129 +
+ src/lib/simulations/lensing.ts                     |   60 +
+ src/lib/simulations/orbit.ts                       |  266 +
+ src/lib/simulations/pathfinding.ts                 |  238 +
+ src/lib/simulations/prng.ts                        |   24 +
+ src/lib/simulations/spectrum.ts                    |   49 +
+ src/lib/simulations/vector-field.ts                |  108 +
+ src/lib/utils.ts                                   |   11 +
+ src/types/content.ts                               |  122 +
+ tests/content.test.ts                              |   57 +
+ tests/simulations.test.ts                          |  166 +
+ tsconfig.json                                      |   44 +
+ vitest.config.ts                                   |   17 +
+ 75 files changed, 20498 insertions(+), 1 deletion(-)
+
+commit f520517
+Date: 2026-11-01T23:08:19-03:30
+Subject: Rebuild portfolio from the Cosmos design revamp
+
+ README.md                                          |   77 +-
+ e2e/interactions.spec.ts                           |  115 -
+ e2e/routes.spec.ts                                 |   52 -
+ e2e/site.spec.ts                                   |   59 +
+ e2e/visual.spec.ts                                 |  122 -
+ package-lock.json                                  |  384 +-
+ package.json                                       |   10 +-
+ postcss.config.mjs                                 |    7 -
+ public/images/interview-platform.webp              |  Bin 42634 -> 0 bytes
+ public/images/observatory-og-source.svg            |   47 -
+ public/images/observatory-og.png                   |  Bin 55276 -> 0 bytes
+ src/app/contact/page.tsx                           |   98 -
+ src/app/globals.css                                | 6671 ++------------------
+ src/app/lab/[slug]/page.tsx                        |  114 -
+ src/app/lab/page.tsx                               |   34 -
+ src/app/layout.tsx                                 |   99 +-
+ src/app/not-found.tsx                              |   23 +-
+ src/app/page.tsx                                   |  195 +-
+ src/app/projects/[slug]/page.tsx                   |  145 -
+ src/app/projects/page.tsx                          |   34 -
+ src/app/research/page.tsx                          |  119 -
+ src/app/robots.ts                                  |    6 +-
+ src/app/simple/page.tsx                            |  202 +
+ src/app/sitemap.ts                                 |   30 +-
+ src/app/theme.css                                  | 1382 ----
+ src/components/cosmos/constellation.tsx            |   59 +
+ src/components/cosmos/contact.tsx                  |   30 +
+ src/components/cosmos/cosmos-nav.tsx               |   32 +
+ src/components/cosmos/cosmos-page.tsx              |  135 +
+ src/components/cosmos/cursor.tsx                   |   76 +
+ src/components/cosmos/decor.tsx                    |   40 +
+ src/components/cosmos/gaming.tsx                   |  162 +
+ src/components/cosmos/hero.tsx                     |  138 +
+ src/components/cosmos/missions.tsx                 |   91 +
+ src/components/cosmos/secret.tsx                   |   31 +
+ src/components/cosmos/terminal.tsx                 |  106 +
+ src/components/cosmos/thesis.tsx                   |   31 +
+ src/components/cosmos/timeline.tsx                 |   25 +
+ src/components/home/external-node-card.tsx         |   26 -
+ src/components/home/observatory-map.tsx            |   98 -
+ src/components/lab/experiment-renderer.tsx         |   39 -
+ .../lab/experiments/dungeon-generator.tsx          |   54 -
+ .../lab/experiments/lensing-field-note.tsx         |  187 -
+ src/components/lab/experiments/orbit-lab.tsx       |  269 -
+ .../lab/experiments/pathfinding-sandbox.tsx        |  216 -
+ .../lab/experiments/vector-field-explorer.tsx      |  192 -
+ src/components/lab/lab-card.tsx                    |   26 -
+ src/components/lab/lab-explorer.tsx                |   42 -
+ src/components/lab/lab-preview.tsx                 |  106 -
+ src/components/layout/site-footer.tsx              |   40 -
+ src/components/layout/site-header.tsx              |  128 -
+ src/components/layout/space-backdrop.tsx           |   11 -
+ src/components/mode-switch.tsx                     |   19 +
+ src/components/projects/project-card.tsx           |   42 -
+ src/components/projects/project-explorer.tsx       |   70 -
+ src/components/projects/project-visual.tsx         |  151 -
+ .../research/stability-spectrum-explorer.tsx       |  144 -
+ src/components/ui/button-link.tsx                  |   59 -
+ src/components/ui/page-intro.tsx                   |   23 -
+ src/components/ui/reveal.tsx                       |   20 -
+ src/components/ui/section-heading.tsx              |   21 -
+ src/components/ui/section-shell.tsx                |   18 -
+ src/components/ui/status-badge.tsx                 |    7 -
+ src/components/ui/tag.tsx                          |    6 -
+ src/content/cosmos.ts                              |  172 +
+ src/content/lab.ts                                 |  137 -
+ src/content/projects.ts                            |  520 --
+ src/content/research.ts                            |   93 -
+ src/content/site.ts                                |   98 +-
+ src/lib/cosmos/aim.ts                              |   27 +
+ src/lib/cosmos/audio.ts                            |   97 +
+ src/lib/cosmos/black-hole-shader.ts                |  139 +
+ src/lib/cosmos/black-hole.ts                       |  506 ++
+ src/lib/cosmos/chirp.ts                            |   30 +
+ src/lib/cosmos/fonts.ts                            |   11 +
+ src/lib/cosmos/terminal.ts                         |  223 +
+ src/lib/cosmos/warp-gates.ts                       |  415 ++
+ src/lib/hooks/use-canvas-animation.ts              |  117 -
+ src/lib/simulations/dungeon.ts                     |  129 -
+ src/lib/sim
+[stat truncated at 5,000 chars]
+commit bb7f683
+Date: 2026-11-01T23:12:36-03:30
+Subject: Link thesis to the honoursthesis GitHub repo
+
+ README.md                         |   2 +-
+ public/documents/final-thesis.pdf | Bin 1176716 -> 0 bytes
+ src/app/simple/page.tsx           |   2 +-
+ src/components/cosmos/thesis.tsx  |   5 +++++
+ src/content/site.ts               |   2 +-
+ src/lib/cosmos/terminal.ts        |   1 +
+ 6 files changed, 9 insertions(+), 3 deletions(-)
+
+commit c1bb84b
+Date: 2026-11-01T23:33:21-03:30
+Subject: Add Cloudflare deployment
+
+ .gitignore           |    2 +
+ README.md            |   15 +-
+ next.config.ts       |    2 +
+ package-lock.json    | 5260 ++++++++++++++++++++++++++++++++------------------
+ package.json         |    6 +-
+ playwright.config.ts |    2 +-
+ src/app/robots.ts    |    2 +
+ src/app/sitemap.ts   |    2 +
+ wrangler.jsonc       |   14 +
+ 9 files changed, 3388 insertions(+), 1917 deletions(-)
+
+commit 54d8361
+Date: 2026-11-02T00:37:38-03:30
+Subject: Switch heading font from Syne to Archivo
+
+ README.md               | 2 +-
+ src/app/globals.css     | 2 +-
+ src/app/layout.tsx      | 6 +++---
+ src/lib/cosmos/fonts.ts | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+commit 0bf80ab
+Date: 2026-11-02T01:25:18-03:30
+Subject: Link résumé on GitHub and refresh work descriptions
+
+ README.md                                  |   2 +-
+ e2e/site.spec.ts                           |   3 ++-
+ public/documents/saurav-chandel-resume.pdf | Bin 157771 -> 0 bytes
+ src/app/simple/page.tsx                    |  22 ++++++++++++----------
+ src/components/cosmos/contact.tsx          |   2 +-
+ src/components/cosmos/hero.tsx             |   2 +-
+ src/content/cosmos.ts                      |   8 ++++----
+ src/content/site.ts                        |   2 +-
+ src/lib/cosmos/terminal.ts                 |   2 +-
+ 9 files changed, 23 insertions(+), 20 deletions(-)
+
+commit 2646d99
+Date: 2026-11-02T01:30:09-03:30
+Subject: Remove Fibly from the site
+
+ e2e/site.spec.ts        |  4 ++--
+ src/app/globals.css     |  3 ---
+ src/app/simple/page.tsx | 18 ------------------
+ src/content/cosmos.ts   | 10 ----------
+ 4 files changed, 2 insertions(+), 33 deletions(-)

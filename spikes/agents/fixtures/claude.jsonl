@@ -1,0 +1,4 @@
+{"type":"system","subtype":"init","session_id":"claude-fixture"}
+{"type":"assistant","message":{"content":[{"type":"text","text":"Reading README"},{"type":"tool_use","id":"read-1","name":"Read","input":{"file_path":"README.md"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"read-1","content":"# Canary Harbor"}]}}
+{"type":"result","subtype":"success","is_error":false,"session_id":"claude-fixture","structured_output":{"summary":"paper boats"},"total_cost_usd":0.02}

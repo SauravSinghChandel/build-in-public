@@ -1,0 +1,4 @@
+node_modules/
+# Ignore all generated outputs, including any future artifacts over 20 MB.
+# Git ignore patterns cannot express a file-size threshold.
+out/

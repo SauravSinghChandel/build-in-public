@@ -1,0 +1,61 @@
+◆  Capturing 5 frames at [0.8s, 4s, 7.5s, 9s, 13.5s] from hyperframes
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /home/justbuster/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Injected deterministic @font-face rules for 1 requested font families
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)
+
+   Fonts: 5 loaded
+   Note: added an end-of-timeline frame at 14.75s. Short beats between your --at times may still be skipped — pass them explicitly.
+[hyperframes] snapshot: frame 1/6 at 0.8s
+[hyperframes] snapshot: frame 2/6 at 4s
+[hyperframes] snapshot: frame 3/6 at 7.5s
+[hyperframes] snapshot: frame 4/6 at 9s
+[hyperframes] snapshot: frame 5/6 at 13.5s
+[hyperframes] snapshot: frame 6/6 at 14.75s
+   Revision: 17a53817-0151-4803-964f-8d20cff8ddf5 (recorded-revision)
+   State: /home/justbuster/projects/build-in-public/spikes/video/hyperframes/.hyperframes/video-state.json
+
+◇  6 snapshots saved to /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-00-at-0.8s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-01-at-4s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-02-at-7.5s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-03-at-9s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-04-at-13.5s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-05-at-14.75s.png
+   /home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/contact-sheet.jpg (grid view for AI review)
+{
+  "ok": true,
+  "outputDir": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots",
+  "frames": [
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-00-at-0.8s.png",
+      "time": 0.8
+    },
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-01-at-4s.png",
+      "time": 4
+    },
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-02-at-7.5s.png",
+      "time": 7.5
+    },
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-03-at-9s.png",
+      "time": 9
+    },
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-04-at-13.5s.png",
+      "time": 13.5
+    },
+    {
+      "path": "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/frame-05-at-14.75s.png",
+      "time": 14.75
+    }
+  ],
+  "contactSheets": [
+    "/home/justbuster/projects/build-in-public/spikes/video/out/hyperframes-v2-snapshots/contact-sheet.jpg"
+  ],
+  "_meta": {
+    "version": "0.9.13",
+    "updateAvailable": false
+  }
+}

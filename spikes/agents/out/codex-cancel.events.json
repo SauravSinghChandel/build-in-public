@@ -1,0 +1,17 @@
+[
+  {
+    "type": "result",
+    "final": true,
+    "sessionId": "01a1a82f-0bb7-7fc3-8696-a56e5f8bd6f3",
+    "structuredOutput": null,
+    "completed": false,
+    "exitCode": 1,
+    "exitSignal": null,
+    "cancelled": true,
+    "stderr": "Reading additional input from stdin...\n",
+    "startupMs": 542.9421900000016,
+    "totalMs": 3339.6167750000022,
+    "errors": [],
+    "canaries": []
+  }
+]

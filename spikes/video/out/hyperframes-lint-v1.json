@@ -1,0 +1,76 @@
+{
+  "ok": false,
+  "errorCount": 3,
+  "warningCount": 3,
+  "infoCount": 0,
+  "findings": [
+    {
+      "code": "video_nested_in_timed_element",
+      "severity": "error",
+      "message": "<video> with data-start is nested inside <div id=\"demo\"> which also has data-start. The frame extractor resolves the video's start from its own data-start without the wrapper's offset, while visibility uses the wrapper's window, so the two disagree: the clip shows the wrong source frames and then disappears partway through its slot.",
+      "elementId": "normal",
+      "fixHint": "Time the wrapper OR the video, never both: remove data-start from the wrapper (use it as a non-timed visual container), or move the <video> up to be a direct child of the stage.",
+      "snippet": "<video id=\"normal\" class=\"clip\" src=\"assets/raw.mp4\" muted data-start=\"2.5\" data-duration=\"10.2\" data-media-start=\"0\" data-track-index=\"0\">",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 4,
+      "column": 1
+    },
+    {
+      "code": "video_nested_in_timed_element",
+      "severity": "error",
+      "message": "<video> with data-start is nested inside <div id=\"demo\"> which also has data-start. The frame extractor resolves the video's start from its own data-start without the wrapper's offset, while visibility uses the wrapper's window, so the two disagree: the clip shows the wrong source frames and then disappears partway through its slot.",
+      "elementId": "ramp",
+      "fixHint": "Time the wrapper OR the video, never both: remove data-start from the wrapper (use it as a non-timed visual container), or move the <video> up to be a direct child of the stage.",
+      "snippet": "<video id=\"ramp\" class=\"clip\" src=\"assets/raw.mp4\" muted data-start=\"12.7\" data-duration=\".7\" data-media-start=\"10.2\" data-playback-rate=\"2\" data-track-index=\"0\">",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 5,
+      "column": 1
+    },
+    {
+      "code": "video_nested_in_timed_element",
+      "severity": "error",
+      "message": "<video> with data-start is nested inside <div id=\"demo\"> which also has data-start. The frame extractor resolves the video's start from its own data-start without the wrapper's offset, while visibility uses the wrapper's window, so the two disagree: the clip shows the wrong source frames and then disappears partway through its slot.",
+      "elementId": "return",
+      "fixHint": "Time the wrapper OR the video, never both: remove data-start from the wrapper (use it as a non-timed visual container), or move the <video> up to be a direct child of the stage.",
+      "snippet": "<video id=\"return\" class=\"clip\" src=\"assets/raw.mp4\" muted data-start=\"13.4\" data-duration=\"1.4000000000000004\" data-media-start=\"11.6\" data-track-index=\"0\">",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 6,
+      "column": 1
+    },
+    {
+      "code": "nested_structure_needs_subcomposition",
+      "severity": "warning",
+      "message": "<div id=\"intro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+      "elementId": "intro",
+      "fixHint": "Move <div id=\"intro\"> and its contents into a sub-composition file and mount it with data-composition-src.",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 2,
+      "column": 1
+    },
+    {
+      "code": "nested_structure_needs_subcomposition",
+      "severity": "warning",
+      "message": "<div id=\"demo\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+      "elementId": "demo",
+      "fixHint": "Move <div id=\"demo\"> and its contents into a sub-composition file and mount it with data-composition-src.",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 3,
+      "column": 1
+    },
+    {
+      "code": "nested_structure_needs_subcomposition",
+      "severity": "warning",
+      "message": "<div id=\"outro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+      "elementId": "outro",
+      "fixHint": "Move <div id=\"outro\"> and its contents into a sub-composition file and mount it with data-composition-src.",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 8,
+      "column": 1
+    }
+  ],
+  "filesScanned": 1,
+  "_meta": {
+    "version": "0.9.13",
+    "updateAvailable": false
+  }
+}

@@ -1,0 +1,499 @@
+{
+  "startedAt": "2026-11-04T20:09:43.857Z",
+  "probe": false,
+  "versions": {
+    "node": "v22.22.1",
+    "claude": "2.1.318 (Claude Code)",
+    "codex": "codex-cli 0.166.0"
+  },
+  "checks": [
+    {
+      "id": "claude-isolation",
+      "status": "PASS",
+      "evidence": {
+        "startupMs": 798.169987,
+        "totalMs": 5625.6099460000005,
+        "exitCode": 0,
+        "canaries": [],
+        "schema": {
+          "valid": true,
+          "errors": []
+        },
+        "errors": []
+      }
+    },
+    {
+      "id": "codex-isolation",
+      "status": "PASS",
+      "evidence": {
+        "startupMs": 982.7402140000004,
+        "totalMs": 13709.515967,
+        "exitCode": 0,
+        "canaries": [],
+        "schema": {
+          "valid": true,
+          "errors": []
+        },
+        "errors": []
+      }
+    },
+    {
+      "id": "control",
+      "status": "PASS",
+      "evidence": {
+        "canaries": [
+          "CANARY_HOOK",
+          "CANARY_MCP"
+        ],
+        "exitCode": 0,
+        "totalMs": 10160.301149000003
+      }
+    },
+    {
+      "id": "claude-cancel",
+      "status": "PASS",
+      "evidence": {
+        "cancelled": true,
+        "exitCode": 0,
+        "exitSignal": null,
+        "totalMs": 3706.619197
+      }
+    },
+    {
+      "id": "codex-cancel",
+      "status": "PASS",
+      "evidence": {
+        "cancelled": true,
+        "exitCode": 1,
+        "exitSignal": null,
+        "totalMs": 3339.6167750000022
+      }
+    },
+    {
+      "id": "claude-resume",
+      "status": "PASS",
+      "evidence": {
+        "name": {
+          "name": "Canary Harbor"
+        },
+        "sessionId": "93bb53fe-43d2-463e-abee-9237346940e3",
+        "totalMs": 3595.4455050000033,
+        "canaries": []
+      }
+    },
+    {
+      "id": "codex-resume",
+      "status": "PASS",
+      "evidence": {
+        "name": {
+          "name": "Canary Harbor"
+        },
+        "sessionId": "01a1a82e-a132-7e13-b254-fc2ae9ffa1e0",
+        "totalMs": 4996.1021150000015,
+        "canaries": []
+      }
+    },
+    {
+      "id": "claude-draft",
+      "status": "PASS",
+      "evidence": {
+        "totalMs": 34548.048397,
+        "validation": {
+          "valid": true,
+          "xLengths": [
+            254,
+            257,
+            230
+          ],
+          "linkedinLength": 1028,
+          "hashtagCounts": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "hook": true,
+          "schema": {
+            "valid": true,
+            "errors": []
+          }
+        }
+      }
+    },
+    {
+      "id": "codex-draft",
+      "status": "PASS",
+      "evidence": {
+        "totalMs": 58422.74569899999,
+        "validation": {
+          "valid": true,
+          "xLengths": [
+            269
+          ],
+          "linkedinLength": 993,
+          "hashtagCounts": [
+            0,
+            0
+          ],
+          "hook": true,
+          "schema": {
+            "valid": true,
+            "errors": []
+          }
+        }
+      }
+    },
+    {
+      "id": "claude-rewrite",
+      "status": "PASS",
+      "evidence": {
+        "totalMs": 13557.230417999992,
+        "validation": {
+          "valid": true,
+          "xLengths": [
+            266,
+            267,
+            239
+          ],
+          "linkedinLength": null,
+          "hashtagCounts": [
+            0,
+            0,
+            0
+          ],
+          "hook": true,
+          "schema": {
+            "valid": true,
+            "errors": []
+          }
+        }
+      }
+    }
+  ],
+  "runs": {
+    "claude-isolation": {
+      "type": "result",
+      "final": true,
+      "sessionId": "93bb53fe-43d2-463e-abee-9237346940e3",
+      "structuredOutput": {
+        "summary": "Canary Harbor is a fake local project for tracking paper boats and their launch dates. The README is just a title and that one-line description, with no setup steps, usage notes or other details."
+      },
+      "completed": true,
+      "costUsd": 0.0921842,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 798.169987,
+      "totalMs": 5625.6099460000005,
+      "errors": [],
+      "canaries": []
+    },
+    "codex-isolation": {
+      "type": "result",
+      "final": true,
+      "sessionId": "01a1a82e-a132-7e13-b254-fc2ae9ffa1e0",
+      "structuredOutput": {
+        "summary": "Canary Harbor is a fake local project for tracking paper boats and their launch dates."
+      },
+      "completed": true,
+      "lastText": "{\"summary\":\"Canary Harbor is a fake local project for tracking paper boats and their launch dates.\"}",
+      "usage": {
+        "input_tokens": 35459,
+        "cached_input_tokens": 17408,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 218,
+        "reasoning_output_tokens": 86
+      },
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "Reading additional input from stdin...\n",
+      "startupMs": 982.7402140000004,
+      "totalMs": 13709.515967,
+      "errors": [],
+      "canaries": []
+    },
+    "control": {
+      "exitCode": 0,
+      "exitSignal": null,
+      "stderr": "",
+      "cancelled": false,
+      "completed": true,
+      "totalMs": 10160.301149000003,
+      "errors": [],
+      "canaries": [
+        "CANARY_HOOK",
+        "CANARY_MCP"
+      ]
+    },
+    "claude-cancel": {
+      "type": "result",
+      "final": true,
+      "sessionId": "fe031e55-46d9-4af6-b475-d25d0c53d41d",
+      "structuredOutput": null,
+      "completed": false,
+      "costUsd": 0,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": true,
+      "stderr": "",
+      "startupMs": 661.6154800000004,
+      "totalMs": 3706.619197,
+      "errors": [
+        "[ede_diagnostic] result_type=user last_content_type=n/a stop_reason=null"
+      ],
+      "canaries": []
+    },
+    "codex-cancel": {
+      "type": "result",
+      "final": true,
+      "sessionId": "01a1a82f-0bb7-7fc3-8696-a56e5f8bd6f3",
+      "structuredOutput": null,
+      "completed": false,
+      "exitCode": 1,
+      "exitSignal": null,
+      "cancelled": true,
+      "stderr": "Reading additional input from stdin...\n",
+      "startupMs": 542.9421900000016,
+      "totalMs": 3339.6167750000022,
+      "errors": [],
+      "canaries": []
+    },
+    "claude-resume": {
+      "type": "result",
+      "final": true,
+      "sessionId": "93bb53fe-43d2-463e-abee-9237346940e3",
+      "structuredOutput": {
+        "name": "Canary Harbor"
+      },
+      "completed": true,
+      "costUsd": 0.2635762,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 727.1492990000042,
+      "totalMs": 3595.4455050000033,
+      "errors": [],
+      "canaries": []
+    },
+    "codex-resume": {
+      "type": "result",
+      "final": true,
+      "sessionId": "01a1a82e-a132-7e13-b254-fc2ae9ffa1e0",
+      "structuredOutput": {
+        "name": "Canary Harbor"
+      },
+      "completed": true,
+      "lastText": "{\"name\":\"Canary Harbor\"}",
+      "usage": {
+        "input_tokens": 55882,
+        "cached_input_tokens": 17408,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 255,
+        "reasoning_output_tokens": 104
+      },
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 798.2981270000018,
+      "totalMs": 4996.1021150000015,
+      "errors": [],
+      "canaries": []
+    },
+    "claude-draft": {
+      "type": "result",
+      "final": true,
+      "sessionId": "241af3ca-cf65-4e89-9f13-44943358b616",
+      "structuredOutput": {
+        "x": {
+          "parts": [
+            "1/3 Landed a portfolio rebuild late one night. First I committed the old \"Observatory\" version so it lives in history, then replaced it with a new \"Cosmos\" design. Out went the lab experiments, the project/research pages and most of a 6k-line stylesheet.",
+            "2/3 What's in: a WebGL black hole hero with a 2D fallback, scroll-driven warp jumps between sections, a \"mission control\" terminal, an aim-check mini-game and a hidden easter egg. There's also /simple, a plain résumé page for people who just want the facts.",
+            "3/3 The follow-up commits were small: Cloudflare Workers static-assets config, a heading font swap from Syne to Archivo, résumé and thesis links pointed at GitHub instead of PDFs bundled in the repo, and Fibly pulled off the site."
+          ]
+        },
+        "linkedin": {
+          "text": "I committed my old portfolio right before replacing most of it.\n\nThe previous version, \"Observatory\", had a lab section with small simulations (orbits, pathfinding, a vector field, a dungeon generator) plus project and research pages. I added it to the repo as its own commit. About 15 minutes later I landed a rebuild based on a Claude Design canvas called \"Cosmos\".\n\nThe new home page has a WebGL black hole hero with a 2D fallback, scroll-driven warp jumps between sections, projects shown in orbit, a terminal with its own commands, an aim-check mini-game and an easter egg. If you just want the facts, there's /simple, a plain résumé page.\n\nThe rest of the session was small stuff: Cloudflare Workers config for the static export, a heading font swap from Syne to Archivo, résumé and thesis links on GitHub instead of PDFs in the repo, and removing an old project (Fibly) from the site.\n\nThe stack is Next.js with a static export, strict TypeScript and plain CSS, with Vitest for the logic and Playwright for browser tests."
+        },
+        "highlights": [
+          "602435b: committed the previous \"Observatory\" site (lab simulations, project/research pages, tests) as a baseline",
+          "f520517: rebuilt the portfolio from the Cosmos design: black hole renderer/shader, warp gates, terminal, audio, aim-check, /simple résumé page; removed Observatory pages and components",
+          "bb7f683: linked the thesis to the honoursthesis GitHub repo and removed the bundled PDF",
+          "c1bb84b: added Cloudflare deployment config (wrangler.jsonc) and deploy instructions",
+          "54d8361: switched the heading font from Syne to Archivo",
+          "0bf80ab: linked the résumé on GitHub (removed the PDF) and refreshed work descriptions",
+          "2646d99: removed Fibly from the site"
+        ],
+        "claims_to_verify": [
+          "The black hole hero is actually WebGL with a working 2D fallback. This comes from the README; the commits only show black-hole.ts and black-hole-shader.ts.",
+          "The Observatory commit (602435b) is an older version imported as history, not new work from that night. The subject says 'previous version', but the code may predate the commit.",
+          "Most of the ~6k-line globals.css was cut in f520517. The stat shows heavy deletions, but the exact net size isn't confirmed.",
+          "The site is live on Cloudflare. c1bb84b only adds the config, so the posts avoid saying it's deployed.",
+          "Fibly is a past project of yours; the commit only says it was removed from the site.",
+          "'Cosmos' is the right name for the Claude Design canvas. The README calls the canvas 'sauravsinghchandel.com — revamp' and uses 'Cosmos mode' for the page."
+        ]
+      },
+      "completed": true,
+      "costUsd": 0.291336,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 547.8428329999952,
+      "totalMs": 34548.048397,
+      "errors": [],
+      "canaries": []
+    },
+    "codex-draft": {
+      "type": "result",
+      "final": true,
+      "sessionId": "01a1a82f-c0e4-74e2-995e-3ee21fed3414",
+      "structuredOutput": {
+        "x": {
+          "parts": [
+            "Over Nov 1–2, I rebuilt my portfolio from the older Observatory structure into a Cosmos-focused site, added Cloudflare deployment config, switched the heading font to Archivo, linked thesis/resume to GitHub, and removed Fibly. The commits show the edit; not deployment."
+          ]
+        },
+        "linkedin": {
+          "text": "A portfolio rebuild is mostly an editing exercise.\nI started from the earlier Observatory version of my portfolio and rebuilt it around the Cosmos design. The old version had separate project, research, contact, and lab routes. The rebuild removes that structure and adds a Cosmos page alongside a simpler résumé mode.\n\nThe next commits were small but practical: I added Cloudflare deployment configuration, changed the heading font from Syne to Archivo, linked the thesis to its GitHub repository, and linked the résumé on GitHub. I also refreshed several work descriptions.\n\nOne decision I like is the one that looks least additive: removing Fibly from the site. That keeps the portfolio closer to what I want to present now, instead of treating every previous entry as permanent.\n\nThe history is compact—most of the work landed between November 1 and 2. I’m describing the repository changes here, not claiming a live deployment or runtime behavior that the commit records do not establish."
+        },
+        "highlights": [
+          "602435b — Added the earlier Observatory portfolio version.",
+          "f520517 — Rebuilt the portfolio around the Cosmos design.",
+          "bb7f683 — Linked the thesis to its GitHub repository.",
+          "c1bb84b — Added Cloudflare deployment configuration.",
+          "54d8361 — Switched the heading font from Syne to Archivo.",
+          "0bf80ab — Linked the résumé on GitHub and refreshed work descriptions.",
+          "2646d99 — Removed Fibly from the site."
+        ],
+        "claims_to_verify": [
+          "Whether the current site builds, passes browser tests, or is live on Cloudflare is not established by the supplied commit history."
+        ]
+      },
+      "completed": true,
+      "lastText": "{\"x\":{\"parts\":[\"Over Nov 1–2, I rebuilt my portfolio from the older Observatory structure into a Cosmos-focused site, added Cloudflare deployment config, switched the heading font to Archivo, linked thesis/resume to GitHub, and removed Fibly. The commits show the edit; not deployment.\"]},\"linkedin\":{\"text\":\"A portfolio rebuild is mostly an editing exercise.\\nI started from the earlier Observatory version of my portfolio and rebuilt it around the Cosmos design. The old version had separate project, research, contact, and lab routes. The rebuild removes that structure and adds a Cosmos page alongside a simpler résumé mode.\\n\\nThe next commits were small but practical: I added Cloudflare deployment configuration, changed the heading font from Syne to Archivo, linked the thesis to its GitHub repository, and linked the résumé on GitHub. I also refreshed several work descriptions.\\n\\nOne decision I like is the one that looks least additive: removing Fibly from the site. That keeps the portfolio closer to what I want to present now, instead of treating every previous entry as permanent.\\n\\nThe history is compact—most of the work landed between November 1 and 2. I’m describing the repository changes here, not claiming a live deployment or runtime behavior that the commit records do not establish.\"},\"highlights\":[\"602435b — Added the earlier Observatory portfolio version.\",\"f520517 — Rebuilt the portfolio around the Cosmos design.\",\"bb7f683 — Linked the thesis to its GitHub repository.\",\"c1bb84b — Added Cloudflare deployment configuration.\",\"54d8361 — Switched the heading font from Syne to Archivo.\",\"0bf80ab — Linked the résumé on GitHub and refreshed work descriptions.\",\"2646d99 — Removed Fibly from the site.\"],\"claims_to_verify\":[\"Whether the current site builds, passes browser tests, or is live on Cloudflare is not established by the supplied commit history.\"]}",
+      "usage": {
+        "input_tokens": 22423,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2989,
+        "reasoning_output_tokens": 2582
+      },
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "Reading additional input from stdin...\n",
+      "startupMs": 425.70431099999405,
+      "totalMs": 58422.74569899999,
+      "errors": [],
+      "canaries": []
+    },
+    "claude-rewrite": {
+      "type": "result",
+      "final": true,
+      "sessionId": "241af3ca-cf65-4e89-9f13-44943358b616",
+      "structuredOutput": {
+        "x": {
+          "parts": [
+            "1/3 Rebuilt my portfolio the other night. Before tearing anything out, I committed the old \"Observatory\" version as-is so it lives in git history. Then I swapped in the new \"Cosmos\" design and deleted the lab sims, the project pages and most of a 6k-line stylesheet.",
+            "2/3 The new home page is the fun part: a WebGL black hole hero (with a 2D fallback), warp jumps between sections as you scroll, a little terminal, an aim-check mini-game and an easter egg. I also added /simple, a plain résumé page for anyone who just wants the facts.",
+            "3/3 The rest of the night was small cleanup: Cloudflare Workers config, swapping the heading font from Syne to Archivo, and pointing the résumé and thesis links at GitHub instead of keeping PDFs in the repo. I also took Fibly off the site."
+          ]
+        }
+      },
+      "completed": true,
+      "costUsd": 0.54722,
+      "exitCode": 0,
+      "exitSignal": null,
+      "cancelled": false,
+      "stderr": "",
+      "startupMs": 770.7411070000089,
+      "totalMs": 13557.230417999992,
+      "errors": [],
+      "canaries": []
+    }
+  },
+  "drafts": {
+    "claude-draft": {
+      "x": {
+        "parts": [
+          "1/3 Landed a portfolio rebuild late one night. First I committed the old \"Observatory\" version so it lives in history, then replaced it with a new \"Cosmos\" design. Out went the lab experiments, the project/research pages and most of a 6k-line stylesheet.",
+          "2/3 What's in: a WebGL black hole hero with a 2D fallback, scroll-driven warp jumps between sections, a \"mission control\" terminal, an aim-check mini-game and a hidden easter egg. There's also /simple, a plain résumé page for people who just want the facts.",
+          "3/3 The follow-up commits were small: Cloudflare Workers static-assets config, a heading font swap from Syne to Archivo, résumé and thesis links pointed at GitHub instead of PDFs bundled in the repo, and Fibly pulled off the site."
+        ]
+      },
+      "linkedin": {
+        "text": "I committed my old portfolio right before replacing most of it.\n\nThe previous version, \"Observatory\", had a lab section with small simulations (orbits, pathfinding, a vector field, a dungeon generator) plus project and research pages. I added it to the repo as its own commit. About 15 minutes later I landed a rebuild based on a Claude Design canvas called \"Cosmos\".\n\nThe new home page has a WebGL black hole hero with a 2D fallback, scroll-driven warp jumps between sections, projects shown in orbit, a terminal with its own commands, an aim-check mini-game and an easter egg. If you just want the facts, there's /simple, a plain résumé page.\n\nThe rest of the session was small stuff: Cloudflare Workers config for the static export, a heading font swap from Syne to Archivo, résumé and thesis links on GitHub instead of PDFs in the repo, and removing an old project (Fibly) from the site.\n\nThe stack is Next.js with a static export, strict TypeScript and plain CSS, with Vitest for the logic and Playwright for browser tests."
+      },
+      "highlights": [
+        "602435b: committed the previous \"Observatory\" site (lab simulations, project/research pages, tests) as a baseline",
+        "f520517: rebuilt the portfolio from the Cosmos design: black hole renderer/shader, warp gates, terminal, audio, aim-check, /simple résumé page; removed Observatory pages and components",
+        "bb7f683: linked the thesis to the honoursthesis GitHub repo and removed the bundled PDF",
+        "c1bb84b: added Cloudflare deployment config (wrangler.jsonc) and deploy instructions",
+        "54d8361: switched the heading font from Syne to Archivo",
+        "0bf80ab: linked the résumé on GitHub (removed the PDF) and refreshed work descriptions",
+        "2646d99: removed Fibly from the site"
+      ],
+      "claims_to_verify": [
+        "The black hole hero is actually WebGL with a working 2D fallback. This comes from the README; the commits only show black-hole.ts and black-hole-shader.ts.",
+        "The Observatory commit (602435b) is an older version imported as history, not new work from that night. The subject says 'previous version', but the code may predate the commit.",
+        "Most of the ~6k-line globals.css was cut in f520517. The stat shows heavy deletions, but the exact net size isn't confirmed.",
+        "The site is live on Cloudflare. c1bb84b only adds the config, so the posts avoid saying it's deployed.",
+        "Fibly is a past project of yours; the commit only says it was removed from the site.",
+        "'Cosmos' is the right name for the Claude Design canvas. The README calls the canvas 'sauravsinghchandel.com — revamp' and uses 'Cosmos mode' for the page."
+      ]
+    },
+    "codex-draft": {
+      "x": {
+        "parts": [
+          "Over Nov 1–2, I rebuilt my portfolio from the older Observatory structure into a Cosmos-focused site, added Cloudflare deployment config, switched the heading font to Archivo, linked thesis/resume to GitHub, and removed Fibly. The commits show the edit; not deployment."
+        ]
+      },
+      "linkedin": {
+        "text": "A portfolio rebuild is mostly an editing exercise.\nI started from the earlier Observatory version of my portfolio and rebuilt it around the Cosmos design. The old version had separate project, research, contact, and lab routes. The rebuild removes that structure and adds a Cosmos page alongside a simpler résumé mode.\n\nThe next commits were small but practical: I added Cloudflare deployment configuration, changed the heading font from Syne to Archivo, linked the thesis to its GitHub repository, and linked the résumé on GitHub. I also refreshed several work descriptions.\n\nOne decision I like is the one that looks least additive: removing Fibly from the site. That keeps the portfolio closer to what I want to present now, instead of treating every previous entry as permanent.\n\nThe history is compact—most of the work landed between November 1 and 2. I’m describing the repository changes here, not claiming a live deployment or runtime behavior that the commit records do not establish."
+      },
+      "highlights": [
+        "602435b — Added the earlier Observatory portfolio version.",
+        "f520517 — Rebuilt the portfolio around the Cosmos design.",
+        "bb7f683 — Linked the thesis to its GitHub repository.",
+        "c1bb84b — Added Cloudflare deployment configuration.",
+        "54d8361 — Switched the heading font from Syne to Archivo.",
+        "0bf80ab — Linked the résumé on GitHub and refreshed work descriptions.",
+        "2646d99 — Removed Fibly from the site."
+      ],
+      "claims_to_verify": [
+        "Whether the current site builds, passes browser tests, or is live on Cloudflare is not established by the supplied commit history."
+      ]
+    },
+    "claude-rewrite": {
+      "x": {
+        "parts": [
+          "1/3 Rebuilt my portfolio the other night. Before tearing anything out, I committed the old \"Observatory\" version as-is so it lives in git history. Then I swapped in the new \"Cosmos\" design and deleted the lab sims, the project pages and most of a 6k-line stylesheet.",
+          "2/3 The new home page is the fun part: a WebGL black hole hero (with a 2D fallback), warp jumps between sections as you scroll, a little terminal, an aim-check mini-game and an easter egg. I also added /simple, a plain résumé page for anyone who just wants the facts.",
+          "3/3 The rest of the night was small cleanup: Cloudflare Workers config, swapping the heading font from Syne to Archivo, and pointing the résumé and thesis links at GitHub instead of keeping PDFs in the repo. I also took Fibly off the site."
+        ]
+      }
+    }
+  },
+  "claudeCalls": 6,
+  "context": {
+    "commitCount": 8,
+    "hashes": [
+      "d60d058da412b15f50d0739061661cdb4e638eb2",
+      "602435b3a34926ca5d55d1276cf4ef4e16bb6d03",
+      "f520517e0a36cb066c9be2228eddf2c810760abf",
+      "bb7f6838d40a0ec60450648a2abbeb2e32f9ffcc",
+      "c1bb84b2213b5c821b6d539017a05213835a6b05",
+      "54d83619e7fc2550bff5dbc6f4df780447c9c085",
+      "0bf80ab5d99606da51f83452b340b0c9c6770274",
+      "2646d998db4e9bc633be2d38cb280288a6940fc8"
+    ],
+    "bytes": 14653,
+    "destination": "/home/justbuster/projects/build-in-public/spikes/agents/out/context-bundle.txt"
+  },
+  "claudeDraftWorkspace": "/tmp/bip-spike-agents/draft-claude-1zz7Wc",
+  "finishedAt": "2026-11-04T20:12:15.923Z"
+}

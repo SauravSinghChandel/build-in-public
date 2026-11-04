@@ -1,0 +1,31 @@
+[
+  {
+    "type": "text",
+    "text": "{\"name\":\"Canary Harbor\"}"
+  },
+  {
+    "type": "result",
+    "final": true,
+    "sessionId": "01a1a82e-a132-7e13-b254-fc2ae9ffa1e0",
+    "structuredOutput": {
+      "name": "Canary Harbor"
+    },
+    "completed": true,
+    "lastText": "{\"name\":\"Canary Harbor\"}",
+    "usage": {
+      "input_tokens": 55882,
+      "cached_input_tokens": 17408,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 255,
+      "reasoning_output_tokens": 104
+    },
+    "exitCode": 0,
+    "exitSignal": null,
+    "cancelled": false,
+    "stderr": "",
+    "startupMs": 798.2981270000018,
+    "totalMs": 4996.1021150000015,
+    "errors": [],
+    "canaries": []
+  }
+]

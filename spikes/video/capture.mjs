@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';
+import fs from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+const out='out/capture'; await fs.mkdir(`${out}/cdp`,{recursive:true});
+const b=await chromium.launch({executablePath:'/home/justbuster/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',headless:true,chromiumSandbox:false});
+const c=await b.newContext({viewport:{width:1440,height:900},recordVideo:{dir:out,size:{width:1440,height:900}}});
+const p=await c.newPage(); const events=[],actions=[],frames=[];let base=0;
+await p.exposeFunction('logEvent',e=>events.push(e));
+await p.addInitScript(()=>{const start=performance.now();for(const type of ['pointermove','click','scroll'])addEventListener(type,e=>window.logEvent({type,t:(performance.now()-start)/1000,x:e.clientX??0,y:e.clientY??0,scrollY:window.scrollY}),{passive:true});});
+await p.goto('http://127.0.0.1:4317',{waitUntil:'networkidle'});await p.addStyleTag({content:'*{cursor:none!important}.cur{display:none!important}'});await p.evaluate(()=>{window.captureStart=performance.now()});
+// Browser events use navigation-relative performance time; align to recording start below.
+const origin=await p.evaluate(()=>performance.now()/1000);const started=performance.now();
+const cd=await c.newCDPSession(p);let pending=[];cd.on('Page.screencastFrame',e=>{const index=frames.length;frames.push({index,t:e.metadata.timestamp});pending.push(fs.writeFile(`${out}/cdp/${String(index).padStart(5,'0')}.jpg`,Buffer.from(e.data,'base64')));cd.send('Page.screencastFrameAck',{sessionId:e.sessionId});});
+await cd.send('Page.startScreencast',{format:'jpeg',quality:90,maxWidth:1440,maxHeight:900,everyNthFrame:1});
+async function at(t,label,fn){await p.waitForTimeout(Math.max(0,t*1000-(performance.now()-started)));actions.push({label,t:(performance.now()-started)/1000});await fn();}
+await at(.2,'land',()=>p.mouse.move(740,480,{steps:1}));
+await at(1.4,'hover Projects',()=>p.locator('a[href="#missions"]').hover());
+await at(2,'click Projects',()=>p.locator('a[href="#missions"]').click());
+await at(5.1,'long scroll start',()=>p.evaluate(()=>window.scrollBy({top:500,behavior:'smooth'})));
+await at(6,'scroll further',()=>p.evaluate(()=>window.scrollBy({top:300,behavior:'smooth'})));
+await at(6.7,'hover Experience',()=>p.locator('a[href="#log"]').hover());
+await at(7.2,'click Experience',()=>p.locator('a[href="#log"]').click());
+await at(10.2,'scroll back up',()=>p.evaluate(()=>window.scrollTo({top:0,behavior:'smooth'})));
+await at(12,'home hold',()=>p.mouse.move(780,440,{steps:1}));
+await at(13,'end',async()=>{});await cd.send('Page.stopScreencast');await Promise.all(pending);
+const video=p.video();await c.close();await video.saveAs(`${out}/playwright.webm`);await b.close();
+const aligned=events.map(e=>({...e,t:e.t-origin})).filter(e=>e.t>=0);await fs.writeFile(`${out}/events.json`,JSON.stringify({viewport:{width:1440,height:900},duration:13,events:aligned,actions,frames},null,2));
+const first=frames[0].t;let list='';for(let i=0;i<frames.length;i++){list+=`file '${String(i).padStart(5,'0')}.jpg'\nduration ${i+1<frames.length?frames[i+1].t-frames[i].t:Math.max(.033,13-(frames[i].t-first))}\n`;}list+=`file '${String(frames.length-1).padStart(5,'0')}.jpg'\n`;await fs.writeFile(`${out}/cdp/frames.txt`,list);
+execFileSync('ffmpeg',['-y','-f','concat','-safe','0','-i',`${out}/cdp/frames.txt`,'-vf','fps=30','-t','13','-c:v','libx264','-crf','19','-pix_fmt','yuv420p',`${out}/cdp.mp4`],{stdio:'ignore'});
+execFileSync('ffmpeg',['-y','-i',`${out}/playwright.webm`,'-vf','fps=30','-c:v','libx264','-crf','19','-pix_fmt','yuv420p',`${out}/playwright.mp4`],{stdio:'ignore'});
+console.log(JSON.stringify({cdpFrames:frames.length,events:aligned.length,actions,clicks:aligned.filter(e=>e.type==='click')},null,2));

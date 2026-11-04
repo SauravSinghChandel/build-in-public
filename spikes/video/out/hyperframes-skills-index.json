@@ -1,0 +1,162 @@
+[
+  {
+    "name": "figma",
+    "path": "skills/figma",
+    "sha": "b38fc6dbd05aeda3b94829b89980ecce6ff16d82",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/figma?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/figma",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/b38fc6dbd05aeda3b94829b89980ecce6ff16d82",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/figma?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/b38fc6dbd05aeda3b94829b89980ecce6ff16d82",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/figma"
+    }
+  },
+  {
+    "name": "hyperframes-cli",
+    "path": "skills/hyperframes-cli",
+    "sha": "827794e7d87dc25e7579e0b29b294c21415e87c3",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes-cli?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes-cli",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/827794e7d87dc25e7579e0b29b294c21415e87c3",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes-cli?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/827794e7d87dc25e7579e0b29b294c21415e87c3",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes-cli"
+    }
+  },
+  {
+    "name": "hyperframes-registry",
+    "path": "skills/hyperframes-registry",
+    "sha": "e25973c80f0070d89436bc43b767b9f3986915fc",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes-registry?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes-registry",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/e25973c80f0070d89436bc43b767b9f3986915fc",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes-registry?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/e25973c80f0070d89436bc43b767b9f3986915fc",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes-registry"
+    }
+  },
+  {
+    "name": "hyperframes",
+    "path": "skills/hyperframes",
+    "sha": "51881bdea5b6e357054645eeb0b2984b6c3c2014",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/51881bdea5b6e357054645eeb0b2984b6c3c2014",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/hyperframes?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/51881bdea5b6e357054645eeb0b2984b6c3c2014",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/hyperframes"
+    }
+  },
+  {
+    "name": "media-use",
+    "path": "skills/media-use",
+    "sha": "af8db9aa91dbba031b37685842f2896ea63df169",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/media-use?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/media-use",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/af8db9aa91dbba031b37685842f2896ea63df169",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/media-use?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/af8db9aa91dbba031b37685842f2896ea63df169",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/media-use"
+    }
+  },
+  {
+    "name": "python-encoding.test.mjs",
+    "path": "skills/python-encoding.test.mjs",
+    "sha": "5564fba8da065c0d05f6c0b9c368ee28fc3648c1",
+    "size": 4743,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/python-encoding.test.mjs?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/blob/main/skills/python-encoding.test.mjs",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/blobs/5564fba8da065c0d05f6c0b9c368ee28fc3648c1",
+    "download_url": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/skills/python-encoding.test.mjs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/python-encoding.test.mjs?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/blobs/5564fba8da065c0d05f6c0b9c368ee28fc3648c1",
+      "html": "https://github.com/heygen-com/hyperframes/blob/main/skills/python-encoding.test.mjs"
+    }
+  },
+  {
+    "name": "remotion-to-hyperframes",
+    "path": "skills/remotion-to-hyperframes",
+    "sha": "fe4f99e55dd4299b805aa0c275acc1c126a43fb9",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/remotion-to-hyperframes?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/remotion-to-hyperframes",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/fe4f99e55dd4299b805aa0c275acc1c126a43fb9",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/remotion-to-hyperframes?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/fe4f99e55dd4299b805aa0c275acc1c126a43fb9",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/remotion-to-hyperframes"
+    }
+  },
+  {
+    "name": "reverse-any-video",
+    "path": "skills/reverse-any-video",
+    "sha": "89fcf6c6d73860e5b0c6a94cb45f0cf03d7075ad",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/reverse-any-video?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/reverse-any-video",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/89fcf6c6d73860e5b0c6a94cb45f0cf03d7075ad",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/reverse-any-video?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/89fcf6c6d73860e5b0c6a94cb45f0cf03d7075ad",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/reverse-any-video"
+    }
+  },
+  {
+    "name": "slideshow",
+    "path": "skills/slideshow",
+    "sha": "a3f87835768b2c9a4a076138e96b6d02efa69595",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/slideshow?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/slideshow",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/a3f87835768b2c9a4a076138e96b6d02efa69595",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/slideshow?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/a3f87835768b2c9a4a076138e96b6d02efa69595",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/slideshow"
+    }
+  },
+  {
+    "name": "style-sampling",
+    "path": "skills/style-sampling",
+    "sha": "d5ad73c93db0f1b01412319347e2d98ff010a83b",
+    "size": 0,
+    "url": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/style-sampling?ref=main",
+    "html_url": "https://github.com/heygen-com/hyperframes/tree/main/skills/style-sampling",
+    "git_url": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/d5ad73c93db0f1b01412319347e2d98ff010a83b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/heygen-com/hyperframes/contents/skills/style-sampling?ref=main",
+      "git": "https://api.github.com/repos/heygen-com/hyperframes/git/trees/d5ad73c93db0f1b01412319347e2d98ff010a83b",
+      "html": "https://github.com/heygen-com/hyperframes/tree/main/skills/style-sampling"
+    }
+  }
+]

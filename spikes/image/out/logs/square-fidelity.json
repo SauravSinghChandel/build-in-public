@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "errors": [],
+  "diffs": [
+    {
+      "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+      "width": 1904,
+      "height": 1190,
+      "mismatches": 76,
+      "mismatchPct": 0.003354282889626439,
+      "maxMismatchPct": 3
+    }
+  ],
+  "overflow": [],
+  "blocked": []
+}

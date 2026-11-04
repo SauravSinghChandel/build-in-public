@@ -1,0 +1,11 @@
+import fs from 'node:fs/promises';
+import {execFileSync as run} from 'node:child_process';
+const probe=f=>JSON.parse(run('ffprobe',['-v','error','-show_entries','format=duration,size,bit_rate:stream=codec_name,width,height,r_frame_rate,avg_frame_rate,nb_frames','-of','json',f],{encoding:'utf8'}));
+const capture=JSON.parse(await fs.readFile('out/capture/events.json','utf8'));const gaps=capture.frames.slice(1).map((e,i)=>e.t-capture.frames[i].t).sort((a,b)=>a-b);
+let metrics={capture:{cdp:probe('out/capture/cdp.mp4'),playwright:probe('out/capture/playwright.webm'),cdpDistinctFrames:capture.frames.length,cdpEffectiveFps:capture.frames.length/13,cdpMaxGap:Math.max(...gaps),cdpP95Gap:gaps[Math.floor(gaps.length*.95)],cdpTimestampSpan:capture.frames.at(-1).t-capture.frames[0].t,events:capture.events.length,clicks:capture.events.filter(e=>e.type==='click'),actions:capture.actions},engines:{}};
+for(const e of ['hyperframes','remotion']){const d={};for(const v of ['v1','v2','v2-repeat']){const file=`out/${e}-${v}.mp4`;try{d[v]={...probe(file),wallSeconds:Number(await fs.readFile(`out/${e}-${v}.seconds`,'utf8')),frame150md5:run('ffmpeg',['-v','error','-i',file,'-vf','select=eq(n\\,150)','-frames:v','1','-f','md5','-'],{encoding:'utf8'}).trim()};run('ffmpeg',['-v','error','-i',file,'-f','null','-']);}catch(err){d[v]={error:String(err)}}}
+ d.installSize=run('du',['-sh',`${e}/node_modules`],{encoding:'utf8'}).trim();d.revisionStat=await fs.readFile(`out/${e}-revision-stat.txt`,'utf8');metrics.engines[e]=d;
+ for(const v of ['v1','v2'])run('ffmpeg',['-y','-v','error','-i',`out/${e}-${v}.mp4`,'-vf',`fps=${16/Number(d[v].format.duration)},scale=480:270,tile=4x4`,'-frames:v','1',`out/${e}-${v}-contact.png`]);await fs.copyFile(`out/${e}-v2-contact.png`,`out/${e}-contact.png`);
+}
+await fs.writeFile('out/metrics.json',JSON.stringify(metrics,null,2));
+const big=run('find',['.','-type','f','-size','+20M','-not','-path','*/node_modules/*'],{encoding:'utf8'}).trim().split('\n').filter(Boolean);await fs.writeFile('.gitignore','node_modules/\n.hyperframes/\n# Exact generated paths over 20 MB (refreshed by node audit.mjs).\n'+big.map(s=>s.slice(2)).join('\n')+'\n');console.log(JSON.stringify(metrics,null,2));

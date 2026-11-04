@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "errorCount": 0,
+  "warningCount": 2,
+  "infoCount": 0,
+  "findings": [
+    {
+      "code": "nested_structure_needs_subcomposition",
+      "severity": "warning",
+      "message": "<div id=\"intro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+      "elementId": "intro",
+      "fixHint": "Move <div id=\"intro\"> and its contents into a sub-composition file and mount it with data-composition-src.",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 2,
+      "column": 1
+    },
+    {
+      "code": "nested_structure_needs_subcomposition",
+      "severity": "warning",
+      "message": "<div id=\"outro\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+      "elementId": "outro",
+      "fixHint": "Move <div id=\"outro\"> and its contents into a sub-composition file and mount it with data-composition-src.",
+      "file": "/home/justbuster/projects/build-in-public/spikes/video/hyperframes/index.html",
+      "line": 8,
+      "column": 1
+    }
+  ],
+  "filesScanned": 1,
+  "_meta": {
+    "version": "0.9.13",
+    "updateAvailable": false
+  }
+}

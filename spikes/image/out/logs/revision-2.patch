@@ -1,0 +1,56 @@
+commit 88a53680d8a2edb82c44a46d00162518bcce5f7c
+Author:     BIP Image Spike <spike@localhost>
+AuthorDate: Wed Nov 4 16:36:27 2026 -0330
+Commit:     BIP Image Spike <spike@localhost>
+CommitDate: Wed Nov 4 16:36:27 2026 -0330
+
+    revision 2 (manual fallback; Codex startup failed)
+
+diff --git a/composition.json b/composition.json
+index 3e3e9a2..d1fffc1 100644
+--- a/composition.json
++++ b/composition.json
+@@ -4,10 +4,12 @@
+   "height": 675,
+   "preset": "launch",
+   "slots": {
+-    "headline": "A new home for everything I build.",
+-    "subhead": "An independent developer’s portfolio. Built with intention, down to the last pixel.",
++    "headline": "My portfolio, rebuilt from scratch",
++    "subhead": "An independent developer\u2019s portfolio. Built with intention, down to the last pixel.",
+     "accent": "#e2ad77",
+-    "background": "#151619"
++    "background": "#1c1815"
+   },
+-  "sources": ["f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e"]
++  "sources": [
++    "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e"
++  ]
+ }
+diff --git a/index.html b/index.html
+index 42bbe36..28b89bf 100644
+--- a/index.html
++++ b/index.html
+@@ -2,7 +2,7 @@
+ <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio · Launch</title><link rel="stylesheet" href="styles.css"></head>
+ <body><main class="canvas">
+ <header class="copy"><p class="eyebrow"><span></span> JUST SHIPPED <i> / </i> PORTFOLIO 2026</p><h1 data-slot="headline"></h1><p class="subhead" data-slot="subhead"></p></header>
+-<section class="stage"><div class="browser-frame" data-bip-frame><div class="browser-chrome"><div class="dots"><b></b><b></b><b></b></div><span>SAURAV SINGH CHANDEL / PORTFOLIO</span><span class="secure">↗</span></div><img alt="Real screenshot of Saurav’s portfolio" data-bip-source="f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e" src="../../assets/f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e.png"></div></section>
++<section class="stage"><div class="browser-frame" data-bip-frame><aside class="nav-annotation" data-bip-annotation>Every project, one place<span aria-hidden="true"></span></aside><div class="browser-chrome"><div class="dots"><b></b><b></b><b></b></div><span>SAURAV SINGH CHANDEL / PORTFOLIO</span><span class="secure">↗</span></div><img alt="Real screenshot of Saurav’s portfolio" data-bip-source="f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e" src="../../assets/f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e.png"></div></section>
+ <footer><span>DESIGNED & BUILT BY SAURAV</span><span>FROM THE WORKBENCH <b>↗</b></span></footer>
+ </main><script>
+ (async()=>{const c=await (await fetch('composition.json')).json();document.documentElement.style.setProperty('--accent',c.slots.accent);document.documentElement.style.setProperty('--background',c.slots.background);for(const e of document.querySelectorAll('[data-slot]'))e.textContent=c.slots[e.dataset.slot];window.bipReady=true;})();
+diff --git a/styles.css b/styles.css
+index b66e1ce..1f0033d 100644
+--- a/styles.css
++++ b/styles.css
+@@ -33,3 +33,9 @@ footer { flex-shrink:0; display:flex; justify-content:space-between; color:#8b85
+ .browser-frame { border:0; outline:1px solid #48423c; width:round(down,min(100%,calc((100vh - 227px) * 1.6)),8px); }
+ @media (max-aspect-ratio:6/5) { h1 { line-height:74px; }.subhead { line-height:32px; }.browser-frame { width:round(down,100%,8px); } }
+ @media (max-aspect-ratio:9/10) { h1 { line-height:90px; }.subhead { line-height:36px; } }
++
++/* Manual fallback for the requested revision after two Codex startup failures. */
++.nav-annotation { position:absolute; z-index:2; right:80px; top:-17px; color:var(--accent); background:var(--background); padding:3px 8px; border:1px solid #6d5140; border-radius:4px; font-size:8px; line-height:12px; letter-spacing:.3px; }
++.nav-annotation span { position:absolute; top:19px; right:25px; height:39px; width:1px; background:var(--accent); }
++.nav-annotation span::after { content:""; position:absolute; bottom:0; left:-2px; width:5px; height:5px; border-right:1px solid var(--accent); border-bottom:1px solid var(--accent); transform:rotate(45deg); }
++@media (max-aspect-ratio:6/5) { .nav-annotation { font-size:10px; line-height:16px; top:-21px; right:108px; }.nav-annotation span { top:23px; height:48px; } }

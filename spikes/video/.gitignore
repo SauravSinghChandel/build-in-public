@@ -1,0 +1,17 @@
+node_modules/
+.hyperframes/
+# Exact generated paths over 20 MB (refreshed by node audit.mjs).
+
+# Reviewer trim: vendored skill snapshots, raw frames, superseded captures, repeat renders
+skills/
+out/capture-attempt1/
+out/capture/frames/
+out/capture/*.jpg
+out/*-repeat.mp4
+out/*-snapshots/
+out/hyperframes-final-zoom/
+hyperframes/assets/gsap*.js
+out/capture/cdp/
+out/capture/*.webm
+out/capture/playwright*.mp4
+out/capture/cdp.mp4

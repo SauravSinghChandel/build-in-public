@@ -1,0 +1,168 @@
+{
+  "versions": {
+    "node": "v22.22.1",
+    "playwright": "1.64.1",
+    "chromium": "156.0.8078.4"
+  },
+  "renders": [
+    {
+      "out": "/home/justbuster/projects/build-in-public/spikes/image/out/renders/launch-revision-2.png",
+      "width": 1200,
+      "height": 675,
+      "dpr": 2,
+      "ms": 320,
+      "overflow": [],
+      "blocked": []
+    },
+    {
+      "out": "/home/justbuster/projects/build-in-public/spikes/image/out/renders/launch-square.png",
+      "width": 1080,
+      "height": 1080,
+      "dpr": 2,
+      "ms": 463,
+      "overflow": [],
+      "blocked": []
+    },
+    {
+      "out": "/home/justbuster/projects/build-in-public/spikes/image/out/renders/launch-portrait.png",
+      "width": 1080,
+      "height": 1350,
+      "dpr": 2,
+      "ms": 460,
+      "overflow": [],
+      "blocked": []
+    }
+  ],
+  "fidelity": {
+    "initial": {
+      "pass": true,
+      "errors": [],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1424,
+          "height": 890,
+          "mismatches": 30624,
+          "mismatchPct": 2.416361570508774,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    },
+    "edited": {
+      "pass": true,
+      "errors": [],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1424,
+          "height": 890,
+          "mismatches": 30688,
+          "mismatchPct": 2.4214114379497538,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    },
+    "square": {
+      "pass": true,
+      "errors": [],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1904,
+          "height": 1190,
+          "mismatches": 76,
+          "mismatchPct": 0.003354282889626439,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    },
+    "portrait": {
+      "pass": true,
+      "errors": [],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1904,
+          "height": 1190,
+          "mismatches": 76,
+          "mismatchPct": 0.003354282889626439,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    }
+  },
+  "negatives": {
+    "filter": {
+      "pass": false,
+      "errors": [
+        "IMG.: filter=saturate(1.4)"
+      ],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1424,
+          "height": 890,
+          "mismatches": 30789,
+          "mismatchPct": 2.42938076000505,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    },
+    "text": {
+      "pass": false,
+      "errors": [
+        "unmarked text overlaps screenshot: UNMARKED OVERLAY"
+      ],
+      "diffs": [
+        {
+          "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+          "width": 1424,
+          "height": 890,
+          "mismatches": 63825,
+          "mismatchPct": 5.036059209695745,
+          "maxMismatchPct": 3
+        }
+      ],
+      "overflow": [],
+      "blocked": []
+    }
+  },
+  "warmMs": [
+    351,
+    355,
+    381,
+    368,
+    368
+  ],
+  "squareOnlySizeChanged": true,
+  "portraitOnlySizeChanged": true,
+  "networkBlocked": true,
+  "asset": {
+    "sha": "f14b5d2ed8eb5b35cfa561c945801866ad66d9576e9cdfe069f279177a85514e",
+    "mode": "444"
+  },
+  "revisions": [
+    "88a5368 revision 2 (manual fallback; Codex startup failed)",
+    "82661ec initial"
+  ],
+  "agentEdit": {
+    "provider": "manual-fallback",
+    "codexSucceeded": false,
+    "attempts": 2,
+    "headline": "My portfolio, rebuilt from scratch",
+    "background": "#1c1815",
+    "annotation": true
+  },
+  "compositionChecksPass": true,
+  "pass": false
+}
