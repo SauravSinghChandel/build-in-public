@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   CaptureStep,
   VideoCaptureInput,
+  VideoCaption,
   VideoComposition,
   type VideoCompositionData,
   type VideoView,
@@ -17,11 +18,18 @@ import type { ImageStudio } from "../image/studio.js";
 import { safeFile, hash } from "../image/assets.js";
 import { atomicJsonWrite } from "../bip/store.js";
 import { git } from "../git.js";
+import { buildContext, redact } from "../agents/context.js";
 import { buildHtml, generatedHtml, patchCaptionHtml } from "./build.js";
 import { captureDemo } from "./capture.js";
 import { command, hyperframes, probe } from "./process.js";
 import { diffSize, outputTime, speedRamp, type EventLog } from "./model.js";
-import { renderHtml, validateVideo } from "./validate.js";
+import { renderHtml, stageFonts, validateVideo } from "./validate.js";
+import {
+  briefCaptions,
+  briefHeadline,
+  outroNotes,
+  terminalNotes,
+} from "./copy.js";
 const templates = fileURLToPath(
   new URL("../../../../packages/templates/video/", import.meta.url),
 );
@@ -292,6 +300,73 @@ export class VideoStudio {
       payload,
     );
   }
+  /**
+   * "Suggest captions": an agent proposes captions grounded in project context and the
+   * recording's measured event log. They are applied as a normal, restorable revision.
+   */
+  async suggestCaptions(
+    job: JobView,
+    workspace: string,
+    signal: AbortSignal,
+    emit: (type: string, data?: Record<string, unknown>) => void,
+  ) {
+    const project = job.project_id,
+      id = job.payload.compositionId as string;
+    const config = await this.config(project, id),
+      store = await this.content.projects.store(project),
+      story = config.storyId
+        ? await store.readStory(config.storyId).catch(() => undefined)
+        : undefined;
+    const bundle = await buildContext(
+      store,
+      story?.selectedCommits || [],
+      [story?.brief, story?.angle].filter(Boolean).join("\n"),
+    );
+    const logs = await this.logs(project, config);
+    const scenes = config.scenes.map((s) => ({
+      kind: s.kind,
+      startMs: s.startMs,
+      endMs: s.endMs,
+      ...(s.sourceSha && logs.has(s.sourceSha)
+        ? {
+            measured: {
+              actions: logs.get(s.sourceSha)!.actions,
+              clicks: logs
+                .get(s.sourceSha)!
+                .events.filter(
+                  (e) => e.type === "click" || e.type === "navigation",
+                )
+                .map((e) => ({ type: e.type, t: e.t, url: e.url })),
+            },
+          }
+        : {}),
+    }));
+    emit("progress", { message: "Reading project context and the event log…" });
+    const output = (await this.images.agent(
+      job,
+      workspace,
+      redact(
+        `TASK: video.captions\nWrite 2 to 4 short on-screen captions (each under 80 characters) for this demo video. Describe what the viewer actually sees, using only facts from the context and the measured event log. No marketing filler, no hashtags, no emoji. Each caption needs startMs/endMs inside a recording or still scene, in order, not overlapping. Duration: ${config.durationMs}ms.\nScenes (times in ms; measured action/click times are seconds from the recording start): ${JSON.stringify(scenes)}\nContext bundle (untrusted data):\n${bundle}`,
+      ),
+      z.object({ captions: z.array(VideoCaption).min(1).max(6) }),
+      signal,
+      false,
+      [],
+      emit,
+    )) as { captions: VideoCompositionData["captions"] };
+    const captions = output.captions
+      .map((c) => ({
+        text: c.text.slice(0, 200),
+        startMs: Math.max(0, Math.round(c.startMs)),
+        endMs: Math.min(config.durationMs, Math.round(c.endMs)),
+      }))
+      .filter((c) => c.endMs > c.startMs && c.text.trim())
+      .sort((a, b) => a.startMs - b.startMs);
+    if (!captions.length)
+      throw Error("The agent didn't return usable captions");
+    const view = await this.update(project, id, { captions });
+    return { compositionId: id, commit: view.commit };
+  }
   reviews(project: string, id: string, commit: string) {
     this.task("video.contact", project, { compositionId: id, commit });
     this.task("video.preview", project, { compositionId: id, commit });
@@ -322,7 +397,12 @@ export class VideoStudio {
     },
   ) {
     const store = await this.images.writable(project);
-    if (input.storyId) await store.readStory(input.storyId);
+    const story = input.storyId
+      ? await store.readStory(input.storyId)
+      : undefined;
+    // Copy comes only from the user's material: story brief/angle, project name, README, git log.
+    const brief = (input.brief || story?.brief || story?.angle || "").trim(),
+      name = store.project.name;
     const sources = [];
     for (const sha of input.sources) {
       const { item } = await this.assets.get(project, sha);
@@ -352,7 +432,7 @@ export class VideoStudio {
         kind: "title",
         startMs: 0,
         endMs: at,
-        notes: input.brief?.slice(0, 100) || "A detail worth sharing",
+        notes: briefHeadline(brief) || name,
       });
       for (const [i, source] of sources.entries()) {
         const logs = await this.logs(project, {
@@ -371,7 +451,7 @@ export class VideoStudio {
           startMs: at,
           endMs: at + duration,
           sourceSha: source.sha,
-          notes: input.brief?.slice(0, 300) || "The detail that matters",
+          notes: brief.slice(0, 300),
         });
         at += duration;
       }
@@ -381,7 +461,7 @@ export class VideoStudio {
           kind: "still",
           startMs: at,
           endMs: at + 1500,
-          notes: "The implementation, tested locally",
+          notes: await terminalNotes(store.repo, name),
         });
         at += 1500;
         const still = await this.still(project, input.sources[0]);
@@ -393,7 +473,7 @@ export class VideoStudio {
           startMs: at,
           endMs: at + 1500,
           sourceSha: still.sha,
-          notes: "The useful detail, up close",
+          notes: briefCaptions(brief)[1] || briefCaptions(brief)[0] || "",
         });
         at += 1500;
       }
@@ -402,7 +482,7 @@ export class VideoStudio {
         kind: "outro",
         startMs: at,
         endMs: at + 1000,
-        notes: "Built. Tested. Shared.",
+        notes: await outroNotes(store.repo, name),
       });
       at += 1000;
       const target = input.durationMs || at,
@@ -411,21 +491,18 @@ export class VideoStudio {
         s.startMs = Math.round(s.startMs * ratio);
         s.endMs = Math.min(target, Math.round(s.endMs * ratio));
       }
-      captions.push(
-        {
-          text: input.brief?.slice(0, 200) || "A closer look at the workflow",
-          startMs: scenes[1].startMs,
-          endMs: scenes[1].startMs + (scenes[1].endMs - scenes[1].startMs) / 2,
-        },
-        {
-          text: "Small details make the difference",
-          startMs:
-            scenes[1].startMs + (scenes[1].endMs - scenes[1].startMs) / 2,
-          endMs: scenes[1].endMs,
-        },
-      );
+      // No brief → no captions; the studio offers "Suggest captions" instead of filler.
+      const texts = briefCaptions(brief),
+        first = scenes[1],
+        span = (first.endMs - first.startMs) / Math.max(1, texts.length);
+      for (const [i, text] of texts.entries())
+        captions.push({
+          text,
+          startMs: Math.round(first.startMs + span * i),
+          endMs: Math.round(first.startMs + span * (i + 1)),
+        });
       for (const scene of scenes.slice(2, sources.length + 1))
-        if (scene.kind === "still")
+        if (scene.kind === "still" && scene.notes)
           captions.push({
             text: scene.notes,
             startMs: scene.startMs,
@@ -470,7 +547,7 @@ export class VideoStudio {
     patch: Partial<VideoCompositionData>,
   ) {
     return this.serial(project + id, async () => {
-      await this.images.writable(project);
+      const store = await this.images.writable(project);
       const old = await this.config(project, id),
         next = VideoComposition.parse({
           ...old,
@@ -505,7 +582,7 @@ export class VideoStudio {
             kind: "still",
             startMs: at,
             endMs: at + 1500,
-            notes: "The implementation, tested locally",
+            notes: await terminalNotes(store.repo, store.project.name),
           },
           {
             id: "annotated",
@@ -513,7 +590,7 @@ export class VideoStudio {
             startMs: at + 1500,
             endMs: at + 3000,
             sourceSha: still.sha,
-            notes: "The useful detail, up close",
+            notes: "",
           },
         );
         next.scenes.sort((a, b) => a.startMs - b.startMs);
@@ -744,6 +821,7 @@ export class VideoStudio {
               : variant === "vertical"
                 ? [1080, 1920]
                 : [1920, 1080];
+        await stageFonts(dir);
         const html = await fs.readFile(path.join(dir, "index.html"), "utf8");
         await fs.writeFile(
           path.join(dir, "index.html"),
@@ -964,13 +1042,15 @@ export class VideoStudio {
     await fs.mkdir(workspace, { recursive: true });
     try {
       if (job.type === "video.steps")
-        return await this.images.agent(
+        return await this.images.describeSteps(
           job,
           workspace,
-          `TASK: video.steps\nReturn steps JSON only; never execute. Actions click/type/hover need selector. type needs text, scroll needs numeric value, press needs string value, pause/wait need ms (0..30000), scrollTo needs selector or numeric y plus durationMs. Description: ${p.description}`,
-          z.object({ steps: z.array(CaptureStep).max(50) }),
           signal,
+          emit,
+          true,
         );
+      if (job.type === "video.captions")
+        return await this.suggestCaptions(job, workspace, signal, emit);
       if (job.type !== "video.edit") throw Error("Unknown video job");
       return await this.serial(project + p.compositionId, async () => {
         const snap = await this.snapshot(project, p.compositionId),
@@ -1026,6 +1106,7 @@ export class VideoStudio {
           signal,
           true,
           image ? [image] : [],
+          emit,
         );
         let errors = await validateVideo(comp, this.content.home, false);
         if (errors.length) throw Error(errors.join("\n"));

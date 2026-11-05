@@ -5,7 +5,9 @@ import os from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import { info, log, git, discover, countSince } from "./git.js";
+import { info, log, git, discover, countSince, validateRepo } from "./git.js";
+import { mapLimit } from "./projects.js";
+import type { DiscoveredRepo, ProjectRow } from "@bip/shared";
 import { resolveSafe, directorySuggestions } from "./paths.js";
 import { openDatabase } from "./db.js";
 import { openProject } from "./bip/store.js";
@@ -416,7 +418,7 @@ describe("Store, registry and migrations", () => {
     first
       .prepare("INSERT INTO tracked_dirs(id,path,depth) VALUES(?,?,?)")
       .run(randomUUID(), root, 2);
-    expect(first.pragma("user_version", { simple: true })).toBe(2);
+    expect(first.pragma("user_version", { simple: true })).toBe(3);
     first.close();
     const second = openDatabase(home);
     expect(second.prepare("SELECT * FROM tracked_dirs").all()).toHaveLength(1);
@@ -427,7 +429,7 @@ describe("Store, registry and migrations", () => {
     const legacy = new old.default(path.join(root, "upgrade/app.db"));
     legacy.close();
     const upgraded = openDatabase(path.join(root, "upgrade"));
-    expect(upgraded.pragma("user_version", { simple: true })).toBe(2);
+    expect(upgraded.pragma("user_version", { simple: true })).toBe(3);
     upgraded.close();
     expect(
       (await fs.readdir(path.join(root, "upgrade"))).some((f) =>
@@ -531,5 +533,139 @@ describe("Store, registry and migrations", () => {
     await s.projects.deleteData(r.id, r.name);
     await expect(fs.stat(path.join(p, ".bip"))).rejects.toThrow();
     expect(await s.projects.list()).toEqual([]);
+  });
+});
+describe("Invalid repositories (M5 §0.9)", () => {
+  async function brokenRepo(withSibling: boolean) {
+    const p = path.join(root, "projects", "broken");
+    await fs.mkdir(path.join(p, ".git"), { recursive: true });
+    if (withSibling) {
+      // A real git dir living next to an empty .git, as seen on a user machine.
+      const src = await repo("source");
+      await commit(src);
+      await fs.cp(path.join(src, ".git"), path.join(p, ".git-local"), {
+        recursive: true,
+      });
+      await fs.rm(src, { recursive: true });
+    }
+    return p;
+  }
+  it("discovery lists an empty .git as invalid, with a fix hint for a sibling git dir", async () => {
+    const plain = await brokenRepo(false);
+    expect(await validateRepo(plain)).toEqual({
+      valid: false,
+      reason: "Not a valid Git repository (.git is empty or broken)",
+    });
+    await fs.rm(plain, { recursive: true });
+    const p = await brokenRepo(true);
+    const good = await repo("projects/good");
+    await commit(good);
+    const s = service();
+    const r = await request(s, "/api/scan", "POST", {
+      root: path.join(root, "projects"),
+      depth: 2,
+    });
+    const found = (await r.json()) as DiscoveredRepo[];
+    const bad = found.find((f) => f.path === p)!;
+    expect(bad).toMatchObject({ invalid: true, head: "", tracked: false });
+    expect(bad.reason).toContain(".git-local");
+    expect(bad.fix).toBe("rmdir .git && printf 'gitdir: .git-local\\n' > .git");
+    expect(found.find((f) => f.path === good)?.invalid).toBeUndefined();
+    // The suggested gitfile is a standard repair: applying it makes the repo valid.
+    await fs.rmdir(path.join(p, ".git"));
+    await fs.writeFile(path.join(p, ".git"), "gitdir: .git-local\n");
+    expect(await validateRepo(p)).toEqual({ valid: true });
+  });
+  it("does not treat a folder inside another repository as valid", async () => {
+    const outer = await repo("outer");
+    await commit(outer);
+    const inner = path.join(outer, "inner");
+    await fs.mkdir(path.join(inner, ".git"), { recursive: true });
+    expect((await validateRepo(inner)).valid).toBe(false);
+  });
+  it("refuses to track an invalid repository without writing anything", async () => {
+    const p = await brokenRepo(true);
+    const s = service();
+    const r = await request(s, "/api/projects", "POST", { paths: [p] });
+    expect(r.status).toBe(400);
+    const body = (await r.json()) as {
+      error: { code: string; message: string; hint?: string };
+    };
+    expect(body.error.code).toBe("INVALID_REPO");
+    expect(body.error.message).not.toContain("Command failed");
+    expect(body.error.hint).toContain("gitdir: .git-local");
+    await expect(fs.stat(path.join(p, ".bip"))).rejects.toThrow();
+    expect(await fs.readdir(path.join(p, ".git"))).toEqual([]);
+    expect(
+      await fs
+        .readFile(path.join(p, ".git-local/info/exclude"), "utf8")
+        .catch(() => ""),
+    ).not.toContain(".bip");
+    expect(s.projects.registry()).toEqual([]);
+  });
+  it("keeps tracking unborn repositories and .git files (worktrees)", async () => {
+    const empty = await repo("empty");
+    expect(await validateRepo(empty)).toEqual({ valid: true });
+    const main = await repo("main");
+    await commit(main);
+    const wt = path.join(root, "wt");
+    await git(main, ["worktree", "add", "-b", "feature", wt]);
+    expect((await fs.lstat(path.join(wt, ".git"))).isFile()).toBe(true);
+    const s = service();
+    const rows = await s.projects.track([empty, wt]);
+    expect(rows.map((r) => r.path).sort()).toEqual([empty, wt].sort());
+    expect(rows.find((r) => r.path === empty)).toMatchObject({
+      head: "",
+      unsharedCount: 0,
+    });
+  });
+});
+describe("Projects list cache (M5 §0.3)", () => {
+  it("serves cached rows first, then revalidates in the background", async () => {
+    const p = await repo();
+    await commit(p);
+    const s = service();
+    await s.projects.track([p]);
+    const first = await request(s, "/api/projects?cached=1");
+    expect(first.headers.get("X-BIP-Stale")).toBe("1");
+    expect(((await first.json()) as ProjectRow[])[0].unsharedCount).toBe(1);
+    await commit(p, "Second commit", "2026-11-02T12:00:00Z");
+    // Stale response: the old count comes back immediately, a refresh starts.
+    const stale = await s.projects.cachedList();
+    expect(stale.stale).toBe(true);
+    expect(stale.rows[0].unsharedCount).toBe(1);
+    await s.projects.refresh();
+    expect((await s.projects.cachedList()).rows[0].unsharedCount).toBe(2);
+    // The plain list is always fresh.
+    await commit(p, "Third commit", "2026-11-03T12:00:00Z");
+    expect((await s.projects.list())[0].unsharedCount).toBe(3);
+  });
+  it("computes fresh rows when nothing is cached yet", async () => {
+    const p = await repo();
+    await commit(p);
+    const s = service();
+    await s.projects.track([p]);
+    const s2 = createApp({
+      home: path.join(root, "app"),
+      fsHome: root,
+      token: "b".repeat(64),
+    });
+    await s.close();
+    close.push(() => s2.close());
+    const r = await s2.projects.cachedList();
+    expect(r.stale).toBe(false);
+    expect(r.rows[0].unsharedCount).toBe(1);
+  });
+  it("mapLimit preserves order and bounds concurrency", async () => {
+    let active = 0,
+      peak = 0;
+    const out = await mapLimit([5, 1, 4, 2, 3, 0, 6], 3, async (n) => {
+      peak = Math.max(peak, ++active);
+      await new Promise((r) => setTimeout(r, n * 3));
+      active--;
+      return n * 2;
+    });
+    expect(out).toEqual([10, 2, 8, 4, 6, 0, 12]);
+    expect(peak).toBe(3);
   });
 });

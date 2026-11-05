@@ -1,4 +1,5 @@
 import {
+  isOverdue,
   textLength,
   type PostView,
   type ProjectRow,
@@ -7,6 +8,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api } from "../../api";
 import { Button } from "../../components/ui/button";
 import {
@@ -20,6 +22,7 @@ import { AgentPicker, JobFeedback, useJobs } from "./jobs";
 import { PublishSheet } from "./Publish";
 import { VideoLauncher } from "../video/Launcher";
 import { Attachments } from "../image/Attachments";
+import { when } from "./DirectPublish";
 export function Stories({ p, storyId }: { p: ProjectRow; storyId?: string }) {
   const [create, setCreate] = useState(false);
   const query = useQuery<StoryView | StoryView[]>({
@@ -258,6 +261,13 @@ function PostPanel({
       message(e);
     }
   };
+  // Editing a scheduled post clears approval and unschedules it on the server.
+  const lastStatus = useRef(post.status);
+  useEffect(() => {
+    if (lastStatus.current === "scheduled" && post.status === "draft")
+      toast("Edited after scheduling, so it's unscheduled. Approve and schedule it again.");
+    lastStatus.current = post.status;
+  }, [post.status]);
   const other = allPosts.find((v) => v.post.platform !== post.platform);
   return (
     <section
@@ -269,7 +279,16 @@ function PostPanel({
           {post.platform === "x" ? "X" : "LinkedIn"}
           {post.replyToPostId ? " follow-up" : ""}
         </h2>
-        <span className="chip">{post.status}</span>
+        <span className="chip">
+          {isOverdue(post)
+            ? "overdue"
+            : post.status === "uncertain"
+              ? "may have posted"
+              : post.status}
+        </span>
+        {post.status === "scheduled" && post.scheduledAt && (
+          <small>{when(post.scheduledAt)}</small>
+        )}
         <small>{status}</small>
       </div>
       {parts.map((part, i) => (
@@ -476,6 +495,11 @@ function PostPanel({
       >
         Review and publish
       </Button>
+      {(post.status === "failed" || post.status === "uncertain") && post.error && (
+        <p role="alert" className="error">
+          {post.error}
+        </p>
+      )}
       {post.publishedUrl && (
         <a target="_blank" rel="noreferrer" href={post.publishedUrl}>
           Published post

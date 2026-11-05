@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CaptureInput,
@@ -6,6 +6,7 @@ import {
   type CompositionView,
   type ProjectRow,
   type JobView,
+  type StepCheck,
 } from "@bip/shared";
 import { api } from "../../api";
 import { Button } from "../../components/ui/button";
@@ -13,7 +14,7 @@ import { Dialog } from "../../components/ui/dialog";
 import { message, ErrorBox } from "../../components/workspace";
 import { AgentPicker, JobFeedback, useJobs } from "../studio/jobs";
 import { VideoLauncher } from "../video/Launcher";
-import { CaptureSteps } from "./CaptureSteps";
+import { CaptureSteps, StepCheckSummary } from "./CaptureSteps";
 import { ImageStudio } from "./Studio";
 export const assetUrl = (project: string, sha: string) =>
   `/api/projects/${project}/assets/${sha}`;
@@ -218,61 +219,43 @@ export function Media({
           onOpenChange={(v) => !v && setCreate(false)}
         >
           <div className="image-create">
-            <label className="field">
-              Source screenshot
-              <select
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-              >
-                <option value="">Choose a source</option>
-                {assets.data
-                  ?.filter(
-                    (a) =>
-                      a.mime.startsWith("image/") && a.kind !== "contact_sheet",
-                  )
-                  .map((a) => (
-                    <option key={a.sha} value={a.sha}>
-                      {a.provenance.type === "upload"
-                        ? a.provenance.filename
-                        : a.kind + " " + a.sha.slice(0, 8)}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="field">
-              Preset
-              <select
-                aria-label="Preset"
-                value={preset}
-                onChange={(e) => setPreset(e.target.value)}
+            <SourcePicker
+              label="Source screenshot"
+              project={p.id}
+              assets={assets.data}
+              value={source}
+              onChange={setSource}
+            />
+            <div className="field">
+              <span id="new-image-preset">Preset</span>
+              <div
+                className="preset-grid"
+                role="radiogroup"
+                aria-labelledby="new-image-preset"
               >
                 {["minimal", "launch", "technical", "comparison"].map((v) => (
-                  <option key={v}>{v}</option>
+                  <button
+                    type="button"
+                    key={v}
+                    role="radio"
+                    aria-checked={preset === v}
+                    aria-pressed={preset === v}
+                    onClick={() => setPreset(v)}
+                  >
+                    <img src={`/presets/${v}.svg`} alt="" />
+                    {v}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
             {preset === "comparison" && (
-              <label className="field">
-                After screenshot
-                <select
-                  value={second || source}
-                  onChange={(e) => setSecond(e.target.value)}
-                >
-                  {assets.data
-                    ?.filter(
-                      (a) =>
-                        a.mime.startsWith("image/") &&
-                        a.kind !== "contact_sheet",
-                    )
-                    .map((a) => (
-                      <option key={a.sha} value={a.sha}>
-                        {a.provenance.type === "upload"
-                          ? a.provenance.filename
-                          : a.sha.slice(0, 8)}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              <SourcePicker
+                label="After screenshot"
+                project={p.id}
+                assets={assets.data}
+                value={second || source}
+                onChange={setSecond}
+              />
             )}
             <Button disabled={!source || busy} onClick={() => void newImage()}>
               Create image
@@ -314,6 +297,7 @@ export function CaptureDialog({
     [captureId, setCaptureId] = useState(""),
     [approved, setApproved] = useState(false),
     [generated, setGenerated] = useState(false),
+    [checks, setChecks] = useState<StepCheck[] | undefined>(),
     [error, setError] = useState("");
   const jobs = useJobs(),
     q = useQueryClient(),
@@ -322,6 +306,7 @@ export function CaptureDialog({
   useEffect(() => {
     if (describeJob?.status === "succeeded") {
       setSteps(JSON.stringify(describeJob.result.steps, null, 2));
+      setChecks(describeJob.result.checks);
       setGenerated(true);
       setApproved(false);
     }
@@ -451,6 +436,8 @@ export function CaptureDialog({
               void api<JobView>(`/projects/${p.id}/capture/describe`, "POST", {
                 provider: agent,
                 description,
+                url,
+                viewport,
               })
                 .then((j) => {
                   setDescribeId(j.id);
@@ -463,10 +450,13 @@ export function CaptureDialog({
           </Button>
         </div>
         <JobFeedback job={describeJob} />
+        <StepCheckSummary checks={checks} />
         <CaptureSteps
           steps={steps}
+          checks={checks}
           onChange={(v) => {
             setSteps(v);
+            setChecks(undefined);
             setApproved(false);
           }}
         />
@@ -478,6 +468,7 @@ export function CaptureDialog({
             value={steps}
             onChange={(e) => {
               setSteps(e.target.value);
+              setChecks(undefined);
               setApproved(false);
             }}
           />
@@ -514,5 +505,71 @@ export function CaptureDialog({
         </Button>
       </div>
     </Dialog>
+  );
+}
+
+/** Describes an image asset by where it came from: capture URL + date, or upload filename. */
+export function assetLabel(a: AssetData) {
+  const date = new Date(a.createdAt).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+  if (a.provenance.type === "capture") {
+    let where = a.provenance.url;
+    try {
+      const u = new URL(a.provenance.url);
+      where = u.host + (u.pathname === "/" ? "" : u.pathname);
+    } catch {}
+    return `${where} · ${date}`;
+  }
+  if (a.provenance.type === "upload")
+    return `${a.provenance.filename} · ${date}`;
+  if (a.kind === "image_render") return `Exported image · ${date}`;
+  if (a.provenance.type === "video_still") return `Video still · ${date}`;
+  return `${a.kind.replace("_", " ")} · ${date}`;
+}
+function SourcePicker({
+  label,
+  project,
+  assets,
+  value,
+  onChange,
+}: {
+  label: string;
+  project: string;
+  assets?: AssetData[];
+  value: string;
+  onChange: (sha: string) => void;
+}) {
+  const labelId = useId();
+  const images =
+    assets?.filter(
+      (a) => a.mime.startsWith("image/") && a.kind !== "contact_sheet",
+    ) || [];
+  return (
+    <div className="field">
+      <span id={labelId}>{label}</span>
+      {!images.length && (
+        <p className="muted">Capture or upload a screenshot first.</p>
+      )}
+      <div className="source-grid" role="radiogroup" aria-labelledby={labelId}>
+        {images.map((a) => (
+          <button
+            type="button"
+            key={a.sha}
+            role="radio"
+            aria-checked={value === a.sha}
+            aria-pressed={value === a.sha}
+            onClick={() => onChange(a.sha)}
+            title={
+              a.provenance.type === "capture" ? a.provenance.url : undefined
+            }
+          >
+            <img src={assetUrl(project, a.sha) + "/thumbnail"} alt="" />
+            <span>{assetLabel(a)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

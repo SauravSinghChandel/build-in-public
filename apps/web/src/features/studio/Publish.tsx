@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message, useRefresh } from "../../components/workspace";
 import { PublishImages } from "../image/Attachments";
+import { DirectPublish, useAccount } from "./DirectPublish";
 export function PublishSheet({
   pId,
   view,
@@ -36,6 +37,7 @@ export function PublishSheet({
     [busy, setBusy] = useState(false);
   const refresh = useRefresh();
   const approved = post.approvedRevisionId === revision.id;
+  const account = useAccount(post.platform);
   const approve = async () => {
     setBusy(true);
     try {
@@ -169,6 +171,8 @@ export function PublishSheet({
         ) : (
           <>
             <p className="chip">Approved revision</p>
+            <DirectPublish pId={pId} view={view} revision={revision} />
+            {account && <h3>Or publish it yourself</h3>}
             {post.platform === "x" ? (
               <a
                 className="button secondary"
@@ -187,9 +191,12 @@ export function PublishSheet({
                 build your thread.
               </p>
             )}
-            <p className="muted small">
-              You publish in the platform. Build in Public never posts for you.
-            </p>
+            {!account && (
+              <p className="muted small">
+                You publish in the platform. Build in Public never posts for
+                you.
+              </p>
+            )}
             <label className="field">
               Paste the published link
               <input

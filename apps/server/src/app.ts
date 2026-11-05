@@ -28,6 +28,9 @@ import { VideoStudio } from "./video/studio.js";
 import { videoRoutes } from "./video/routes.js";
 import { ImageStudio } from "./image/studio.js";
 import { imageRoutes } from "./image/routes.js";
+import { Accounts } from "./publishing/accounts.js";
+import { Publisher } from "./publishing/publisher.js";
+import { publishingRoutes } from "./publishing/routes.js";
 export function createApp(
   options: {
     home?: string;
@@ -36,6 +39,9 @@ export function createApp(
     token?: string;
     dev?: boolean;
     noAuth?: boolean;
+    publishing?: ConstructorParameters<typeof Accounts>[3] & {
+      intervalMs?: number;
+    };
   } = {},
 ) {
   const home = options.home || dataHome(),
@@ -54,11 +60,16 @@ export function createApp(
       e instanceof z.ZodError
         ? 400
         : (e as Error & { status?: number }).status || 400;
+    const extra = e as Error & { apiCode?: string; hint?: string };
     return c.json(
       error(
-        e instanceof z.ZodError ? "VALIDATION_ERROR" : "REQUEST_FAILED",
+        e instanceof z.ZodError
+          ? "VALIDATION_ERROR"
+          : extra.apiCode || "REQUEST_FAILED",
         e.message,
-        "Check the input and folder permissions, then try again.",
+        extra.apiCode
+          ? extra.hint
+          : "Check the input and folder permissions, then try again.",
       ),
       status as 400,
     );
@@ -143,6 +154,11 @@ export function createApp(
   });
   app.get("/api/projects", async (c) => {
     if (c.req.query("rescan") === "1") await projects.rescan();
+    else if (c.req.query("cached") === "1") {
+      const { rows, stale } = await projects.cachedList();
+      if (stale) c.header("X-BIP-Stale", "1");
+      return c.json(rows);
+    }
     return c.json(await projects.list());
   });
   app.post("/api/projects", async (c) =>
@@ -228,6 +244,18 @@ export function createApp(
   imageRoutes(app, images);
   const videos = new VideoStudio(images);
   videoRoutes(app, videos);
+  // Test-only clock shift so scheduling can be exercised without waiting.
+  const offset = Number(process.env.BIP_TEST_CLOCK_OFFSET_MS) || 0;
+  const now = options.publishing?.now ?? (() => Date.now() + offset);
+  const accounts = new Accounts(db, home, port, {
+    ...options.publishing,
+    now,
+  });
+  const publisher = new Publisher(content, accounts, images.assets, {
+    now,
+    intervalMs: options.publishing?.intervalMs,
+  });
+  publishingRoutes(app, accounts, publisher, { dev });
   app.get("/api/fs/home", (c) =>
     c.json({ home: options.fsHome || os.homedir() }),
   );
@@ -245,9 +273,13 @@ export function createApp(
     content,
     images,
     videos,
+    accounts,
+    publisher,
     db,
     async close() {
+      await publisher.stop();
       await content.jobs.close();
+      await images.drain();
       await images.origin.close();
       await projects.close();
       db.close();

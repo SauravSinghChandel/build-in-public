@@ -34,6 +34,7 @@ export function VideoStudio({
     [captions, setCaptions] = useState<VideoCompositionData["captions"]>([]),
     [instruction, setInstruction] = useState(""),
     [agent, setAgent] = useState<"claude" | "codex">("claude"),
+    [captionAgent, setCaptionAgent] = useState<"claude" | "codex">("claude"),
     [sheet, setSheet] = useState(false),
     [frame, setFrame] = useState(0),
     [variant, setVariant] = useState("landscape"),
@@ -60,6 +61,7 @@ export function VideoStudio({
       jobs.data?.filter((j) => j.payload.compositionId === id) || [],
     active = related.find((j) => ["queued", "running"].includes(j.status)),
     edit = related.find((j) => j.type === "video.edit"),
+    suggest = related.find((j) => j.type === "video.captions"),
     final = related.find((j) => j.id === renderJob);
   const progress = useQuery<Record<string, string>>({
     queryKey: ["partials"],
@@ -152,7 +154,13 @@ export function VideoStudio({
             <strong>{config?.title || "Video Studio"}</strong>
             {data?.choppy && (
               <>
-                <span className="chip">Choppy recording</span>
+                <span
+                  className="chip"
+                  role="note"
+                  title="The page's animation kept Chromium from delivering frames steadily (under 12 fps or a gap over 500 ms), so motion in this recording may stutter."
+                >
+                  Heavy animation on this page
+                </span>
                 <Button onClick={onRecordAgain}>Record again</Button>
               </>
             )}
@@ -341,6 +349,31 @@ export function VideoStudio({
                       </select>
                     </label>
                     <h2>Captions</h2>
+                    {!captions.length && (
+                      <div className="caption-suggest">
+                        <p className="muted">
+                          No captions yet. Add a story brief, or suggest
+                          captions from the project and this recording.
+                        </p>
+                        <AgentPicker
+                          p={p}
+                          task="video.captions"
+                          value={captionAgent}
+                          onChange={setCaptionAgent}
+                        />
+                        <Button
+                          onClick={() =>
+                            void api(base + "/captions/suggest", "POST", {
+                              provider: captionAgent,
+                            })
+                              .then(adopt)
+                              .catch(message)
+                          }
+                        >
+                          Suggest captions
+                        </Button>
+                      </div>
+                    )}
                     {captions.map((c, i) => (
                       <label className="field" key={i}>
                         Caption {i + 1}
@@ -389,6 +422,7 @@ export function VideoStudio({
                       Apply
                     </Button>
                   </fieldset>
+                  <JobFeedback job={suggest} />
                   <JobFeedback job={edit} />
                   {story?.posts.map(({ post }) => (
                     <Button

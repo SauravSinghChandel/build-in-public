@@ -7,10 +7,32 @@ import { api } from "../api";
 export function message(error: unknown) {
   toast.error(error instanceof Error ? error.message : String(error));
 }
+let servedCached = false;
 export function useProjects() {
+  const q = useQueryClient();
   return useQuery({
     queryKey: ["projects"],
-    queryFn: () => api<ProjectRow[]>("/projects"),
+    queryFn: async () => {
+      // First load: render the server's cached rows at once, then revalidate in the background.
+      if (servedCached) return api<ProjectRow[]>("/projects");
+      servedCached = true;
+      const response = await fetch("/api/projects?cached=1");
+      const data: unknown = await response.json(); // always drain the body
+      if (!response.ok) {
+        const error = data as { error: { message: string; hint?: string } };
+        throw Error(
+          error.error.message +
+            (error.error.hint ? " " + error.error.hint : ""),
+        );
+      }
+      const rows = data as ProjectRow[];
+      if (response.headers.get("X-BIP-Stale"))
+        setTimeout(
+          () => void q.invalidateQueries({ queryKey: ["projects"] }),
+          0,
+        );
+      return rows;
+    },
   });
 }
 export function useRefresh() {

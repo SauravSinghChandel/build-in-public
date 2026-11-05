@@ -48,11 +48,15 @@ const postFields = {
     "publishing",
     "published",
     "failed",
+    // A create call failed after sending: it may be live. Never retried automatically.
+    "uncertain",
   ]),
   scheduledAt: stamp.optional(),
   publishedAt: stamp.optional(),
   publishedUrl: z.url().optional(),
   externalId: z.string().optional(),
+  /** Every published part id, in order (X threads have one per part). */
+  externalIds: z.array(z.string()).optional(),
   error: z.string().optional(),
 };
 const sha = z.string().regex(/^[a-f0-9]{64}$/);
@@ -147,6 +151,11 @@ export interface DiscoveredRepo extends GitInfo {
   path: string;
   name: string;
   tracked: boolean;
+  /** Set when the folder has a .git entry Git cannot use. */
+  invalid?: boolean;
+  reason?: string;
+  /** A copyable shell command that would repair the repository; never run by BIP. */
+  fix?: string;
 }
 export interface AgentStatus {
   id: string;
@@ -235,6 +244,43 @@ export function intentUrl(parts: string[], platform: "x" | "linkedin") {
   if (platform === "x") return `https://x.com/intent/post?text=${encoded}`;
   const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encoded}`;
   return url.length > 2000 ? "https://www.linkedin.com/feed/" : url;
+}
+/** A scheduled post more than this late is Overdue and is never auto-posted. */
+export const SCHEDULE_GRACE_MS = 2 * 60 * 1000;
+export function isOverdue(
+  post: { status: string; scheduledAt?: string },
+  now = Date.now(),
+) {
+  return (
+    post.status === "scheduled" &&
+    !!post.scheduledAt &&
+    Date.parse(post.scheduledAt) < now - SCHEDULE_GRACE_MS
+  );
+}
+export type PlatformId = "x" | "linkedin";
+export interface AccountInfo {
+  id: string;
+  platform: PlatformId;
+  handle: string;
+  displayName?: string;
+  scopes: string[];
+  expiresAt: string | null;
+  /** LinkedIn: tokens last about 60 days. */
+  reconnectBy: string | null;
+  expiry: "ok" | "soon" | "expired";
+  createdAt: string;
+}
+export interface PlatformAccountsView {
+  platform: PlatformId;
+  redirectUri: string;
+  scopes: string[];
+  app: { clientId: string; hasSecret: boolean } | null;
+  account: AccountInfo | null;
+}
+export interface AccountsView {
+  /** null when requested with `?metadata=1` (no keychain access). */
+  secretStore: { kind: "keychain" | "file"; warning?: string } | null;
+  platforms: PlatformAccountsView[];
 }
 export interface PostView {
   post: PostData;
@@ -518,4 +564,36 @@ export interface VideoView {
   revisions: VideoRevision[];
   clicks: { t: number; x: number; y: number }[];
   choppy: boolean;
+}
+
+/** Result of dry-running one generated step's selector against the live page. */
+export interface StepCheck {
+  status: "ok" | "missing" | "ambiguous" | "invalid" | "none";
+  count?: number;
+  message?: string;
+}
+export interface PageElement {
+  role: string;
+  name: string;
+  text?: string;
+  href?: string;
+  selector: string;
+}
+/** Separates a friendly job error from its raw log (shown behind a "Details" toggle). */
+export const ERROR_DETAILS = "\n\n--- Details ---\n";
+// eslint-disable-next-line no-control-regex
+const ansi =
+  /[\u001b\u009b](?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\-_])/g;
+export function stripAnsi(text: string) {
+  return text.replace(ansi, "");
+}
+export function splitJobError(error: string | null | undefined) {
+  if (!error) return { message: "", details: "" };
+  const at = error.indexOf(ERROR_DETAILS);
+  return at < 0
+    ? { message: error, details: "" }
+    : {
+        message: error.slice(0, at),
+        details: error.slice(at + ERROR_DETAILS.length),
+      };
 }

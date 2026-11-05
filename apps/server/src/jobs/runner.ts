@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
-import type { JobView } from "@bip/shared";
+import { stripAnsi, type JobView } from "@bip/shared";
 export interface Lifecycle {
   id: number;
   jobId: string;
@@ -158,7 +158,7 @@ export class JobRunner {
       this.events.publish(job.id, "succeeded", { result });
     } catch (e) {
       const status = signal.aborted ? "cancelled" : "failed";
-      const error = e instanceof Error ? e.message : String(e);
+      const error = stripAnsi(e instanceof Error ? e.message : String(e));
       this.db
         .prepare("UPDATE jobs SET status=?,error=?,finished_at=? WHERE id=?")
         .run(status, error, new Date().toISOString(), job.id);

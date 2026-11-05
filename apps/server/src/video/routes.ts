@@ -27,6 +27,8 @@ export function videoRoutes(app: Hono, studio: VideoStudio) {
           .strictObject({
             provider: agent,
             description: z.string().min(1).max(10000),
+            url: VideoCaptureInput.shape.url.optional(),
+            viewport: VideoCaptureInput.shape.viewport.optional(),
           })
           .parse(await c.req.json()),
       ),
@@ -109,6 +111,15 @@ export function videoRoutes(app: Hono, studio: VideoStudio) {
       .parse(await c.req.json());
     return c.json(
       studio.task("video.edit", c.req.param("id")!, {
+        ...b,
+        compositionId: c.req.param("compositionId")!,
+      }),
+    );
+  });
+  app.post(comp + "/captions/suggest", async (c) => {
+    const b = z.strictObject({ provider: agent }).parse(await c.req.json());
+    return c.json(
+      studio.task("video.captions", c.req.param("id")!, {
         ...b,
         compositionId: c.req.param("compositionId")!,
       }),

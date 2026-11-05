@@ -255,7 +255,12 @@ it("captures fixture → events/assets → lint → contact sheet/540p → 3s fi
       sources: [capture.recording.sha],
       style: "clean",
       durationMs: 3000,
+      brief: "A faster capture path. Every click is measured.",
     });
+    expect(v.composition.captions.map((c) => c.text)).toEqual([
+      "A faster capture path.",
+      "Every click is measured.",
+    ]);
     const id = v.composition.id;
     const dir = await s.videos.dir(p.id, id);
     expect(await s.videos.validate(p.id, dir)).toEqual([]);

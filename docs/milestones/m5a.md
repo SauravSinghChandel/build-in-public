@@ -1,0 +1,37 @@
+# M5a — §0 live-review fixes (items 1–9)
+
+Worktree `build-in-public-m5`, branch `m5-publishing`. Nothing committed or pushed. No publishing, accounts or scheduling code was touched.
+
+1. **Page-aware steps:** `capture/pagemap.ts` loads the URL in Chromium and extracts ≤150 deduplicated visible elements: role, name, text, href and a selector that matches exactly one element (`role=button[name="Simple"]`, then `text="…"`, `data-testid`, `#id`, `[name]` and `a[href]`). The element map goes into the `image.steps`/`video.steps` prompts with the instruction "use only these selectors". Every generated step is then dry-run (`count()===1`) and marked ok/missing/ambiguous/invalid in the step editor, with a summary line. `scrollTo` now resolves Playwright selectors. The old description-only path is kept for requests without a URL.
+2. **Friendly errors:** `capture/errors.ts` strips ANSI codes and returns messages like "Step 2: couldn't find `#nope`.", "Step 1: `button` matches 3 elements. Make it more specific.", "isn't a valid selector" and "Couldn't open URL: connection refused…". The raw log is kept after a `--- Details ---` marker, and the UI shows it behind a "Details" toggle (`JobError`). The job runner strips ANSI codes from all job errors.
+3. **Slow first load:** I profiled 8 cloned real repos. A fresh `/api/projects` takes 170–190 ms, or 435 ms when it runs alongside the mount-time rescan (which itself takes 514–635 ms). Most of that is serial git processes. The fix is stale-while-revalidate: `GET /api/projects?cached=1` returns in-memory rows in about 2 ms with `X-BIP-Stale: 1` and refreshes in the background; the client uses it on first load, then revalidates. The cache is warmed at server start. Git calls are parallelised with `mapLimit` (6) in list and scan, and the three `info()` lookups now run concurrently. The plain list is always fresh.
+4. **Image Studio:**
+   - Slot and instruction textareas use Plex Sans; only `.mono` fields (code, JSON) stay mono.
+   - The accent colour is a swatch plus a validated hex field.
+   - Revision 1's thumbnail is rendered in the background on create, and drained on shutdown.
+   - The New image dialog shows source thumbnails with capture host/path and date (or filename), and a preset thumbnail picker. The studio's source swap and the video picker use the same labels.
+5. **Agent activity:** `agents/activity.ts` maps Claude `tool_use` events (Read/Edit/Write/Grep/Bash…) and Codex items (`command_execution`/`file_change`/`mcp`) to lines like "Reading styles.css…" or "Editing index.html…". These stream to the job line for image/video edits, steps, alt text, captions and post jobs. The fake CLIs now emit tool events for edit tasks.
+6. **No filler copy:** Default captions are only the first two sentences of the story brief or angle. Without one, there are no captions and the studio shows "Suggest captions": a new `video.captions` agent job grounded in the context bundle and the measured event log, applied as a restorable revision.
+   - The title card is the brief headline, or the project name if there is no brief.
+   - The outro is the project name, plus the README website if one is found.
+   - The technical terminal card shows the real `git log --oneline` (redacted).
+   - The "Built with intention / Build · Ship · Share / Built. Tested. Shipped." card text and placeholder callouts are gone.
+7. **Fonts and auto-fit:** IBM Plex Sans 400/600 and Mono 400 (OFL) are bundled in `packages/templates/video/fonts/`. They are staged as trusted `bip-fonts/` files with injected `@font-face` and preload for every lint/render, so compositions stay limited to their 4 files. The templates use Plex. Title/outro `h1` sizes come from deterministic glyph-width fitting (`fitTitle`, measured Plex 600 advances), which keeps every word and line within 90% of the frame. Layout is checked in Chromium at 1920×1080, 1080×1920 and 960×540.
+8. **WebGL capture:** I measured a 160-step raymarched "black hole" fixture at 1440×900 (6 s, 2 runs each). Default SwiftShader: 3.6 fps, 325 ms max gap. `--use-angle=swiftshader --enable-unsafe-swiftshader`: 3.1 fps, 583 ms. `--use-gl=egl`: the screencast broke (0.2 fps). Default capped at 960×600, quality 70: 3.2 fps. `--use-angle=vulkan`: 59.1 fps, 37 ms. **Kept: `--use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization`: 59.6–59.8 fps, 21–32 ms.** `launchCaptureBrowser` probes the WebGL renderer and falls back to Chromium's defaults when only a software renderer is available (`BIP_CAPTURE_GPU=0` forces the fallback). The screencast was already capped at the target size. When the choppiness gate trips, the UI says "Heavy animation on this page" with the measured fps and gap, plus "Record again".
+9. **Invalid `.git`:** `validateRepo()` runs `git rev-parse --show-toplevel` with `GIT_CEILING_DIRECTORIES` so Git can't walk up to a parent repo, and requires the top level to equal the folder.
+   - Scan lists invalid repos as `invalid: true` with a `reason`, plus a `fix` when `.git` is empty and a sibling folder has HEAD, objects and config. The Add projects dialog shows these rows disabled, with "Not a valid Git repository (.git is empty or broken)" and a "Copy fix" button for `rmdir .git && printf 'gitdir: .git-local\n' > .git`.
+   - Track and locate validate before `openProject`, so nothing is written on failure, and return a 400 with code `INVALID_REPO` and a hint.
+   - Unborn repos and `.git` files (worktrees) keep working.
+
+**Tests:** `typecheck` PASS. `test` PASS, 96 tests in 6 files: 12 new in `m5.test.ts`, 7 new in `core.test.ts`, and 1 assertion added to `video.test.ts`. `test:e2e`: PASS, 4/4 (core, m2, m3, m4), 1.6 min. `build`: PASS. `git diff --check`: clean. The e2e run caught a real bug: the cached projects fetch left a 401 response body unread, so a capture of the app page never reached network idle. That is fixed, and a network-idle timeout now gets a friendly message. I changed two existing tests: the video integration test now passes a brief (default captions changed by design), and the m3 e2e uses the new radio pickers.
+
+**Gaps:**
+- The projects cache is in memory only. The first request after a restart computes rows, mitigated by the start-up warm-up; I avoided a migration to prevent conflicts with the parallel M5 work.
+- The dry run checks selectors against the initial page only. Steps that target elements that appear after an earlier click show as "missing" (warned, not blocked).
+- The GPU path depends on host drivers. CI or headless servers fall back to software WebGL, where heavy pages remain choppy and are flagged.
+- `fitTitle` uses an ASCII width table; other characters get a conservative estimate, with `overflow-wrap:anywhere` as a backstop.
+- Real Claude/Codex smoke testing is still left for the reviewer.
+
+## Reviewer live test (2026-11-05, merged M5a+M5b)
+- Merge conflicts in `apps/server/src/index.ts` and `apps/web/src/style.css` resolved (kept both sides; fixed a dropped `}`). 124 unit tests + 5 e2e pass on the combined code.
+- Live: an empty `.git` + `.git-local` repo is flagged invalid in the scan, tracking returns `INVALID_REPO` with the gitfile hint, and nothing is written. Claude page-aware steps produced `role=link[name="Simple"]` (validated count 1) and the capture with it succeeded. A bad selector reads "Step 1: couldn't find `#nope`."

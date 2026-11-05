@@ -6,7 +6,12 @@ import { api } from "../../api";
 import { Path } from "../../components/Path";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
-import { ErrorBox, relative, useRefresh } from "../../components/workspace";
+import {
+  ErrorBox,
+  message,
+  relative,
+  useRefresh,
+} from "../../components/workspace";
 export function AddProjects({
   open,
   onOpenChange,
@@ -204,16 +209,18 @@ export function AddProjects({
                 type="checkbox"
                 aria-label="Select all"
                 checked={
-                  repos.some((r) => !r.tracked) &&
+                  repos.some((r) => !r.tracked && !r.invalid) &&
                   repos
-                    .filter((r) => !r.tracked)
+                    .filter((r) => !r.tracked && !r.invalid)
                     .every((r) => selected.has(r.path))
                 }
                 onChange={(e) =>
                   setSelected(
                     new Set(
                       e.target.checked
-                        ? repos.filter((r) => !r.tracked).map((r) => r.path)
+                        ? repos
+                            .filter((r) => !r.tracked && !r.invalid)
+                            .map((r) => r.path)
                         : [],
                     ),
                   )
@@ -224,11 +231,14 @@ export function AddProjects({
           </div>
           <div className="repo-picker">
             {repos.map((r) => (
-              <label className="repo-choice" key={r.path}>
+              <label
+                className={`repo-choice${r.invalid ? " invalid" : ""}`}
+                key={r.path}
+              >
                 <input
                   type="checkbox"
-                  checked={r.tracked || selected.has(r.path)}
-                  disabled={r.tracked}
+                  checked={!r.invalid && (r.tracked || selected.has(r.path))}
+                  disabled={r.tracked || r.invalid}
                   onChange={() => toggle(r.path)}
                 />
                 <span>
@@ -236,10 +246,40 @@ export function AddProjects({
                   <span className="mono muted">
                     <Path value={r.path} />
                   </span>
+                  {r.invalid && (
+                    <span className="repo-invalid">
+                      <span className="error">
+                        Not a valid Git repository (.git is empty or broken)
+                      </span>
+                      {r.reason && r.fix && (
+                        <span className="muted small">{r.reason}</span>
+                      )}
+                      {r.fix && (
+                        <span className="repo-fix">
+                          <code>{r.fix}</code>
+                          <Button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              void navigator.clipboard
+                                .writeText(r.fix!)
+                                .then(() => toast.success("Fix copied"))
+                                .catch(message);
+                            }}
+                          >
+                            Copy fix
+                          </Button>
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </span>
                 <span className="mono muted">{r.branch}</span>
                 <span className="muted">
-                  {r.tracked ? "Tracking" : relative(r.lastCommitAt)}
+                  {r.invalid
+                    ? "Can't track"
+                    : r.tracked
+                      ? "Tracking"
+                      : relative(r.lastCommitAt)}
                 </span>
               </label>
             ))}

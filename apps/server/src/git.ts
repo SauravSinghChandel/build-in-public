@@ -4,24 +4,77 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { GitInfo, Commit } from "@bip/shared";
 const exec = promisify(execFile);
-export async function git(cwd: string, args: string[]) {
+export async function git(
+  cwd: string,
+  args: string[],
+  env?: Record<string, string>,
+) {
   return (
     await exec("git", args, {
       cwd,
       timeout: 10000,
       maxBuffer: 16 * 1024 * 1024,
+      ...(env ? { env: { ...process.env, ...env } } : {}),
     })
   ).stdout;
+}
+export type RepoCheck =
+  { valid: true } | { valid: false; reason: string; fix?: string };
+const isFile = (p: string) =>
+  fs
+    .lstat(p)
+    .then((s) => s.isFile())
+    .catch(() => false);
+const isDir = (p: string) =>
+  fs
+    .lstat(p)
+    .then((s) => s.isDirectory())
+    .catch(() => false);
+/** Checks that `repo` itself is a working Git repository root (no walking up to a parent repo). */
+export async function validateRepo(repo: string): Promise<RepoCheck> {
+  const dotGit = path.join(repo, ".git");
+  const stat = await fs.lstat(dotGit).catch(() => null);
+  const broken = "Not a valid Git repository (.git is empty or broken)";
+  if (!stat) return { valid: false, reason: "Not a Git repository (no .git)" };
+  try {
+    const top = (
+      await git(repo, ["rev-parse", "--show-toplevel"], {
+        GIT_CEILING_DIRECTORIES: path.dirname(repo),
+      })
+    ).trim();
+    if (top && (await fs.realpath(top)) === (await fs.realpath(repo)))
+      return { valid: true };
+  } catch {}
+  if (stat.isDirectory() && !(await fs.readdir(dotGit)).length) {
+    for (const e of await fs.readdir(repo, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name === ".git") continue;
+      const dir = path.join(repo, e.name);
+      if (
+        (await isFile(path.join(dir, "HEAD"))) &&
+        (await isFile(path.join(dir, "config"))) &&
+        (await isDir(path.join(dir, "objects")))
+      )
+        return {
+          valid: false,
+          reason: `${broken}. .git is an empty folder; the Git data looks like it is in ${e.name}/.`,
+          fix: `rmdir .git && printf 'gitdir: ${e.name}\\n' > .git`,
+        };
+    }
+  }
+  return { valid: false, reason: broken };
 }
 const cache = new Map<string, unknown>();
 async function cached<T>(
   repo: string,
   key: string,
   fn: () => Promise<T>,
+  knownHead?: string,
 ): Promise<T> {
-  const head = await git(repo, ["rev-parse", "--verify", "HEAD"])
-    .then((x) => x.trim())
-    .catch(() => "");
+  const head =
+    knownHead ??
+    (await git(repo, ["rev-parse", "--verify", "HEAD"])
+      .then((x) => x.trim())
+      .catch(() => ""));
   const k = JSON.stringify([repo, head, key]);
   if (cache.has(k)) return cache.get(k) as T;
   const value = await fn();
@@ -30,26 +83,35 @@ async function cached<T>(
   return value;
 }
 export async function info(repo: string): Promise<GitInfo> {
-  const head = await git(repo, ["rev-parse", "--verify", "HEAD"])
-    .then((x) => x.trim())
-    .catch(() => "");
-  // Branch and origin may change without changing HEAD; only immutable commit data is cached.
-  const branch = await git(repo, ["symbolic-ref", "--short", "HEAD"])
-    .then((x) => x.trim())
-    .catch(() => `detached at ${head.slice(0, 7)}`);
-  const remoteUrl = await git(repo, ["remote", "get-url", "origin"])
-    .then((x) => x.trim())
-    .catch(() => null);
-  const commit = await cached(repo, "info", async () => ({
-    rootCommit: head
-      ? (await git(repo, ["rev-list", "--max-parents=0", "HEAD"]))
-          .trim()
-          .split("\n")[0]
-      : "",
-    lastCommitAt: head
-      ? (await git(repo, ["show", "-s", "--format=%cI", "HEAD"])).trim()
-      : null,
-  }));
+  // Independent lookups run in parallel; branch and origin may change without changing HEAD,
+  // so only immutable commit data is cached.
+  const [head, symbolic, remoteUrl] = await Promise.all([
+    git(repo, ["rev-parse", "--verify", "HEAD"])
+      .then((x) => x.trim())
+      .catch(() => ""),
+    git(repo, ["symbolic-ref", "--short", "HEAD"])
+      .then((x) => x.trim())
+      .catch(() => null),
+    git(repo, ["remote", "get-url", "origin"])
+      .then((x) => x.trim())
+      .catch(() => null),
+  ]);
+  const branch = symbolic ?? `detached at ${head.slice(0, 7)}`;
+  const commit = await cached(
+    repo,
+    "info",
+    async () => ({
+      rootCommit: head
+        ? (await git(repo, ["rev-list", "--max-parents=0", "HEAD"]))
+            .trim()
+            .split("\n")[0]
+        : "",
+      lastCommitAt: head
+        ? (await git(repo, ["show", "-s", "--format=%cI", "HEAD"])).trim()
+        : null,
+    }),
+    head,
+  );
   return { branch, head, remoteUrl, ...commit };
 }
 export function parseLog(output: string): Commit[] {

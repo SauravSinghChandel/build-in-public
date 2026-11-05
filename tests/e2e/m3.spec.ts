@@ -102,7 +102,16 @@ test("upload → launch image → revisions → square export → X draft attach
     );
   await expect(page.locator(".media-tile")).toHaveCount(1);
   await page.getByRole("button", { name: "New image", exact: true }).click();
-  await page.getByLabel("Preset", { exact: true }).selectOption("launch");
+  const create = page.getByRole("dialog", { name: "New image", exact: true });
+  await expect(
+    create
+      .getByRole("radiogroup", { name: "Source screenshot" })
+      .getByRole("radio"),
+  ).toHaveCount(1);
+  await expect(
+    create.getByRole("radio", { name: /\.png · / }).locator("img"),
+  ).toBeVisible();
+  await create.getByRole("radio", { name: "launch", exact: true }).click();
   await page.getByRole("button", { name: "Create image", exact: true }).click();
   const studio = page.getByRole("dialog", {
     name: "Image Studio",
