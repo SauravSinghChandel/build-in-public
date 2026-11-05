@@ -28,7 +28,10 @@ import { git } from "./git.js";
 
 /** JSON Schema for agent CLIs. The claude CLI rejects a `$schema` draft-2020-12 declaration, so drop it. */
 export function agentSchema(schema: z.ZodType): object {
-  const { $schema: _ignored, ...rest } = z.toJSONSchema(schema) as Record<string, unknown>;
+  const { $schema: _ignored, ...rest } = z.toJSONSchema(schema) as Record<
+    string,
+    unknown
+  >;
   return rest;
 }
 const Summary = z.strictObject({
@@ -39,13 +42,18 @@ const Summary = z.strictObject({
 });
 export class Content {
   readonly jobs: JobRunner;
+  imageHandler?: (
+    job: JobView,
+    signal: AbortSignal,
+    emit: (type: string, data?: Record<string, unknown>) => void,
+  ) => Promise<unknown>;
   constructor(
     readonly projects: Projects,
     readonly db: Database.Database,
     readonly home: string,
   ) {
     this.jobs = new JobRunner(db, (j, s, e) => this.run(j, s, e));
-    this.jobs.start();
+    queueMicrotask(() => this.jobs.start());
   }
   async story(projectId: string, storyId: string): Promise<StoryView> {
     const s = await this.projects.store(projectId);
@@ -133,6 +141,10 @@ export class Content {
     signal: AbortSignal,
     emit: (type: string, data?: Record<string, unknown>) => void,
   ) {
+    if (job.type.startsWith("image.")) {
+      if (!this.imageHandler) throw Error("Image studio unavailable");
+      return this.imageHandler(job, signal, emit);
+    }
     const s = await this.projects.store(job.project_id),
       p = job.payload;
     const story = p.storyId ? await s.readStory(p.storyId) : undefined;

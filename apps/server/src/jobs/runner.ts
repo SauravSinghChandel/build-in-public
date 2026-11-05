@@ -54,9 +54,11 @@ export class JobRunner {
   }
   list(): JobView[] {
     return (
-      this.db.prepare("SELECT * FROM jobs ORDER BY rowid").all() as any[]
+      this.db.prepare("SELECT * FROM jobs ORDER BY rowid DESC").all() as any[]
     ).map((r) => ({
       ...r,
+      startedAt: r.started_at,
+      finishedAt: r.finished_at,
       payload: JSON.parse(r.payload_json || "{}"),
       result: r.result_json ? JSON.parse(r.result_json) : null,
     }));
@@ -115,7 +117,9 @@ export class JobRunner {
   }
   private pump() {
     if (this.stopped) return;
-    for (const job of this.list().filter((j) => j.status === "queued")) {
+    for (const job of this.list()
+      .reverse()
+      .filter((j) => j.status === "queued")) {
       if (this.active.size >= 2) break;
       if ([...this.active.values()].some((a) => a.key === job.resource_key))
         continue;

@@ -90,10 +90,15 @@ test("post studio, assisted publishing and interrupted job resume", async ({
   await page
     .getByRole("link", { name: /studio-project.*studio-project/ })
     .click();
-  for (let i = 3; i <= 5; i++)
-    await page
-      .getByRole("checkbox", { name: `Select Studio change ${i}`, exact: true })
-      .check();
+  await page
+    .getByRole("checkbox", { name: "Select Studio change 5", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", { name: "Select Studio change 3", exact: true })
+    .click({ modifiers: ["Shift"] });
+  await expect(
+    page.getByRole("checkbox", { name: "Select Studio change 4", exact: true }),
+  ).toBeChecked();
   await page
     .getByRole("button", { name: "Create story from 3 commits" })
     .click();
@@ -105,15 +110,17 @@ test("post studio, assisted publishing and interrupted job resume", async ({
   await page.getByRole("button", { name: "Draft X and LinkedIn" }).click();
   const x = page.getByRole("region", { name: "X draft", exact: true }),
     li = page.getByRole("region", { name: "LinkedIn draft", exact: true });
-  await expect(x.getByLabel("X part 1")).toBeVisible();
+  await expect(
+    x.getByRole("textbox", { name: "Part 1 of 3", exact: true }),
+  ).toBeVisible();
   await expect(li.getByLabel("LinkedIn text")).toBeVisible();
   await x.getByRole("button", { name: "Shorten", exact: true }).click();
   await expect(
     x.getByText("Revision 2 · agent · Shorten", { exact: true }),
   ).toBeVisible();
-  await expect(x.getByLabel("X part 1")).toHaveValue(
-    "I simplified my daily workflow by removing a repeated step.",
-  );
+  await expect(
+    x.getByRole("textbox", { name: "Post", exact: true }),
+  ).toHaveValue("I simplified my daily workflow by removing a repeated step.");
   await x
     .getByRole("button", { name: "Restore revision 1", exact: true })
     .click();
@@ -174,9 +181,9 @@ test("post studio, assisted publishing and interrupted job resume", async ({
   await expect(
     x.getByText("Revision 4 · agent · Expand", { exact: true }),
   ).toBeVisible();
-  await expect(x.getByLabel("X part 1")).toHaveValue(
-    "I built a smaller workflow around the detail that mattered.",
-  );
+  await expect(
+    x.getByRole("textbox", { name: "Post", exact: true }),
+  ).toHaveValue("I built a smaller workflow around the detail that mattered.");
   // Repeat recovery for an initial two-platform draft, not just an edit.
   await page.getByRole("tab", { name: "Stories", exact: true }).click();
   await page.getByRole("button", { name: "New story", exact: true }).click();
@@ -202,7 +209,9 @@ test("post studio, assisted publishing and interrupted job resume", async ({
     .locator(".story-editor")
     .getByRole("button", { name: "Resume", exact: true })
     .click();
-  await expect(x.getByLabel("X part 1")).toBeVisible();
+  await expect(
+    x.getByRole("textbox", { name: "Part 1 of 3", exact: true }),
+  ).toBeVisible();
   await expect(li.getByLabel("LinkedIn text")).toBeVisible();
   await page.screenshot({
     path: "test-results/m2-story-editor.png",

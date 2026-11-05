@@ -18,6 +18,7 @@ import {
 import { AnglesSheet } from "./Angles";
 import { AgentPicker, JobFeedback, useJobs } from "./jobs";
 import { PublishSheet } from "./Publish";
+import { Attachments } from "../image/Attachments";
 export function Stories({ p, storyId }: { p: ProjectRow; storyId?: string }) {
   const [create, setCreate] = useState(false);
   const query = useQuery<StoryView | StoryView[]>({
@@ -135,7 +136,7 @@ function StoryEditor({ p, view }: { p: ProjectRow; view: StoryView }) {
           <>
             <section className="draft-panel" aria-label="X draft">
               <h2>X</h2>
-              <JobFeedback job={storyJobs.at(-1)} />
+              <JobFeedback job={storyJobs[0]} />
             </section>
             <section className="draft-panel" aria-label="LinkedIn draft">
               <h2>LinkedIn</h2>
@@ -178,7 +179,7 @@ function PostPanel({
     q = useQueryClient(),
     jobs = useJobs(),
     base = `/projects/${p.id}/stories/${post.storyId}/posts/${post.id}`;
-  const job = jobs.data?.filter((j) => j.payload.postId === post.id).at(-1);
+  const job = jobs.data?.find((j) => j.payload.postId === post.id);
   const active = !!job && ["running", "queued"].includes(job.status);
   const serverText = useRef(JSON.stringify(current?.parts || [""])),
     latest = useRef(parts),
@@ -272,7 +273,11 @@ function PostPanel({
       {parts.map((part, i) => (
         <div className="thread-part" key={i}>
           <label className="field">
-            {post.platform === "x" ? `X part ${i + 1}` : "LinkedIn text"}
+            {post.platform === "x"
+              ? parts.length === 1
+                ? "Post"
+                : `Part ${i + 1} of ${parts.length}`
+              : "LinkedIn text"}
             <textarea
               disabled={active || p.readOnly}
               value={part}
@@ -344,50 +349,63 @@ function PostPanel({
       ))}
       <JobFeedback job={job} />
       <div className="edit-actions">
-        <AgentPicker p={p} task="post.edit" value={agent} onChange={setAgent} />
-        {["Regenerate", "Shorten", "Expand"].map((action) => (
-          <Button
-            key={action}
-            disabled={active || p.readOnly}
-            onClick={() => void edit(action)}
-          >
-            {action}
-          </Button>
-        ))}
-        <select
-          aria-label={`${post.platform} tone`}
-          value={tone}
-          onChange={(e) => setTone(e.target.value)}
-        >
-          {["Casual", "Technical", "Professional", "Playful"].map((v) => (
-            <option key={v}>{v}</option>
+        <div className="toolbar-group">
+          <AgentPicker
+            p={p}
+            task="post.edit"
+            value={agent}
+            onChange={setAgent}
+          />
+          {["Regenerate", "Shorten", "Expand"].map((action) => (
+            <Button
+              key={action}
+              disabled={active || p.readOnly}
+              onClick={() => void edit(action)}
+            >
+              {action}
+            </Button>
           ))}
-        </select>
-        <Button disabled={active} onClick={() => void edit(`Tone: ${tone}`)}>
-          Apply tone
-        </Button>
-        {other && (
+        </div>
+        <label className="toolbar-group">
+          Tone
+          <select
+            aria-label={`${post.platform} tone`}
+            value={tone}
+            onChange={(e) => {
+              setTone(e.target.value);
+              void edit(`Tone: ${e.target.value}`);
+            }}
+            disabled={active}
+          >
+            {["Casual", "Technical", "Professional", "Playful"].map((v) => (
+              <option key={v}>{v}</option>
+            ))}
+          </select>
+        </label>
+        <div className="toolbar-group">
+          {other && (
+            <Button
+              disabled={active}
+              onClick={() =>
+                void edit(`Adapt from ${other.post.platform}`, {
+                  sourcePostId: other.post.id,
+                })
+              }
+            >
+              Adapt from {other.post.platform === "x" ? "X" : "LinkedIn"}
+            </Button>
+          )}
           <Button
             disabled={active}
             onClick={() =>
-              void edit(`Adapt from ${other.post.platform}`, {
-                sourcePostId: other.post.id,
+              void edit("Write a follow-up replying to this post", {
+                followUp: true,
               })
             }
           >
-            Adapt from {other.post.platform === "x" ? "X" : "LinkedIn"}
+            Follow-up
           </Button>
-        )}
-        <Button
-          disabled={active}
-          onClick={() =>
-            void edit("Write a follow-up replying to this post", {
-              followUp: true,
-            })
-          }
-        >
-          Follow-up
-        </Button>
+        </div>
       </div>
       <label className="field">
         Instruction
@@ -403,6 +421,7 @@ function PostPanel({
       >
         Apply instruction
       </Button>
+      <Attachments p={p} post={post} />
       <h3>Claims to verify</h3>
       {view.claims.length ? (
         <ul>

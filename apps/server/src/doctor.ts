@@ -12,11 +12,17 @@ export async function agents(): Promise<AgentStatus[]> {
     ["claude", "codex"].map(async (id) => {
       try {
         const version = (
-          await exec(binaryFor(id as "claude" | "codex"), ["--version"], { timeout: 10000 })
+          await exec(binaryFor(id as "claude" | "codex"), ["--version"], {
+            timeout: 10000,
+          })
         ).stdout.trim();
         let auth: AgentStatus["auth"] = "unknown";
         if (id === "codex") {
-          auth = await exec(binaryFor(id as "claude" | "codex"), ["login", "status"], { timeout: 10000 })
+          auth = await exec(
+            binaryFor(id as "claude" | "codex"),
+            ["login", "status"],
+            { timeout: 10000 },
+          )
             .then(() => "signed in" as const)
             .catch(() => "not signed in" as const);
         }
@@ -27,9 +33,11 @@ export async function agents(): Promise<AgentStatus[]> {
           version,
           auth,
           hint:
-            id === "claude"
-              ? "Run claude once in a terminal to sign in"
-              : "Run codex login to sign in",
+            auth === "signed in"
+              ? ""
+              : id === "claude"
+                ? "Run claude once in a terminal to sign in"
+                : "Run codex login to sign in",
         };
       } catch {
         return {

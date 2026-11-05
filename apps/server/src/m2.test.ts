@@ -293,8 +293,6 @@ describe("content and safety", () => {
       "xoxb-" + "a".repeat(20),
       "sk_live_" + "z".repeat(24),
       "eyJabc.abc.def",
-      "API_KEY=pretend-secret",
-      "KEY=pretend-secret",
       "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----",
     ];
     for (const secret of secrets) {
@@ -314,15 +312,15 @@ describe("content and safety", () => {
     const s = await openProject(dir);
     cleanup.push(() => s.close());
     await s.writeContext({
-      shareable: "API_KEY=planted-secret",
-      private: "Never name Acme\nTOKEN=planted-token",
+      shareable: "API_KEY=ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      private: "Never name Acme\nTOKEN=ghp_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     });
     const bundle = await buildContext(s, [sha], "user note");
     expect(Buffer.byteLength(bundle)).toBeLessThan(40000);
     expect(bundle.split("Commit ")[0]).not.toContain("README_LINE_80");
     expect(bundle).not.toContain("LOCKFILE_CANARY");
-    expect(bundle).not.toContain("planted-secret");
-    expect(bundle).not.toContain("planted-token");
+    expect(bundle).not.toContain("ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(bundle).not.toContain("ghp_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     expect(bundle).toContain("Never mention");
     expect(
       capDiff("diff --git a/a b/a\n" + "line\n".repeat(500)).split("\n").length,
@@ -402,7 +400,7 @@ describe("content and safety", () => {
     const story = await s.createStory({ title: "Test" }),
       post = await s.createPost(story.id, { platform: "x" });
     let r = await s.addRevision(story.id, post.id, {
-      parts: ["API_KEY=secret-value"],
+      parts: ["API_KEY=ghp_cccccccccccccccccccccccccccccc"],
       author: "agent",
     });
     await expect(

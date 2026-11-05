@@ -24,6 +24,8 @@ import { backup } from "./backup.js";
 import { agents, doctor } from "./doctor.js";
 import { Content } from "./content.js";
 import { contentRoutes } from "./content-routes.js";
+import { ImageStudio } from "./image/studio.js";
+import { imageRoutes } from "./image/routes.js";
 export function createApp(
   options: {
     home?: string;
@@ -98,10 +100,17 @@ export function createApp(
         !timingSafeEqual(Buffer.from(supplied), Buffer.from(token))
       )
         return c.json(error("UNAUTHORIZED", "Invalid session token"), 401);
+      // Cookies are scoped to the API so render-origin navigations never receive them.
+      setCookie(c, "bip_session", "", {
+        path: "/",
+        maxAge: 0,
+        httpOnly: true,
+        sameSite: "Strict",
+      });
       setCookie(c, "bip_session", token, {
         httpOnly: true,
         sameSite: "Strict",
-        path: "/",
+        path: "/api",
       });
       return c.redirect(dev ? "http://127.0.0.1:5173/" : "/");
     }
@@ -213,7 +222,11 @@ export function createApp(
   app.get("/api/agents/status", async (c) => c.json(await agents()));
   const content = new Content(projects, db, home);
   contentRoutes(app, content);
-  app.get("/api/fs/home", c => c.json({home: options.fsHome || os.homedir()}));
+  const images = new ImageStudio(content);
+  imageRoutes(app, images);
+  app.get("/api/fs/home", (c) =>
+    c.json({ home: options.fsHome || os.homedir() }),
+  );
   app.all("/api/*", (c) =>
     c.json(error("NOT_FOUND", "API route not found"), 404),
   );
@@ -226,9 +239,11 @@ export function createApp(
     port,
     projects,
     content,
+    images,
     db,
     async close() {
       await content.jobs.close();
+      await images.origin.close();
       await projects.close();
       db.close();
     },

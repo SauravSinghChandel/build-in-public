@@ -5,6 +5,7 @@ import { api } from "../../api";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message, useRefresh } from "../../components/workspace";
+import { PublishImages } from "../image/Attachments";
 export function PublishSheet({
   pId,
   view,
@@ -96,6 +97,12 @@ export function PublishSheet({
             )}
           </div>
         ))}
+        {url && !publishUrl(url, post.platform) && (
+          <p role="alert" className="error">
+            Paste a link from {post.platform === "x" ? "x.com" : "linkedin.com"}
+          </p>
+        )}
+        <PublishImages project={pId} post={post} />
         <h3>Review before approving</h3>
         {check.isPending ? (
           <p>Scanning final text…</p>

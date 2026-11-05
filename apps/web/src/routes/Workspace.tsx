@@ -11,6 +11,7 @@ import { ProjectSettings } from "../features/project/ProjectSettings";
 import { Context } from "../features/project/context/Context";
 import { Overview } from "../features/project/overview/Overview";
 import { Stories } from "../features/studio/Stories";
+import { Media } from "../features/image/Media";
 export function Workspace({ id }: { id: string }) {
   const {
     data: p,
@@ -132,6 +133,8 @@ export function Workspace({ id }: { id: string }) {
           <Overview p={p} onContext={() => setTab("Context")} />
         ) : tab === "Stories" ? (
           <Stories p={p} storyId={pathname.split("/")[4]} />
+        ) : tab === "Media" ? (
+          <Media p={p} />
         ) : tab === "Context" ? (
           <Context p={p} />
         ) : tab === "Settings" ? (
