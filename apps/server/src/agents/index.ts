@@ -15,6 +15,7 @@ export interface AgentRequest {
   task?: string;
   prompt: string;
   workspace: string;
+  images?: string[];
   readDirs?: string[];
   writeDirs?: string[];
   outputSchema?: object;
@@ -147,6 +148,7 @@ export function buildArgs({
   provider,
   prompt,
   workspace,
+  images = [],
   readDirs = [],
   writeDirs = [],
   outputSchema,
@@ -186,6 +188,7 @@ export function buildArgs({
     "-C",
     workspace,
     ...readDirs.flatMap((d) => ["--add-dir", d]),
+    ...images.flatMap((image) => ["-i", image]),
     "--skip-git-repo-check",
     ...(resumeSessionId ? ["resume", resumeSessionId] : []),
     "--",

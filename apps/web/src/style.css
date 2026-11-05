@@ -1630,3 +1630,146 @@ textarea {
   min-width: 100px;
   width: 120px;
 }
+
+.video-launcher {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.video-studio {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+.video-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  min-height: 0;
+  flex: 1;
+  gap: 16px;
+}
+.video-main {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+}
+.video-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  flex: 1;
+  background: #0c0e12;
+  overflow: hidden;
+}
+.video-stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+.video-contact {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #111;
+}
+.video-studio .studio-right {
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+.video-studio fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.video-studio .studio-revisions {
+  height: 220px;
+  max-height: 220px;
+  flex-shrink: 0;
+}
+.video-studio .studio-revision {
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: 320px;
+  gap: 4px;
+  overflow: auto;
+}
+.video-studio .studio-revision > * {
+  flex-shrink: 0;
+}
+.video-studio .studio-revision pre {
+  max-height: 48px;
+  overflow: auto;
+  margin: 0;
+}
+.video-studio .studio-revision img {
+  height: 48px;
+  object-fit: contain;
+}
+.video-studio pre {
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+.scene-timeline {
+  height: 44px;
+  position: relative;
+  flex-shrink: 0;
+}
+.scene-timeline button {
+  position: absolute;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+  color: var(--text);
+  overflow: hidden;
+  font-size: 12px;
+}
+.timeline-markers {
+  position: relative;
+  height: 30px;
+  flex-shrink: 0;
+}
+.timeline-markers button {
+  position: absolute;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+.timeline-markers .click-marker {
+  top: 14px;
+  color: var(--ok);
+}
+.attached-image video {
+  max-width: 260px;
+  max-height: 150px;
+}
+.capture-step {
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .video-body {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+  .video-studio .studio-top {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,140 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #15171c;
+  color: #e4e7ec;
+  font-family: Arial, sans-serif;
+}
+#root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.clip {
+  position: absolute;
+  inset: 0;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8%;
+  text-align: center;
+  background: radial-gradient(ellipse at top, #303947, #15171c 75%);
+}
+h1 {
+  font-size: 7vw;
+  line-height: 1.05;
+  max-width: 90%;
+  margin: 0 0 3vh;
+}
+.card p {
+  font-size: 2.5vw;
+  color: #aab4c5;
+}
+.viewport {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 6%;
+  width: min(90vw, calc(80vh * var(--source-ratio, 1.6)));
+  height: min(80vh, calc(90vw / var(--source-ratio, 1.6)));
+  overflow: hidden;
+  border-radius: 1.5vw;
+  background: #111;
+}
+.camera {
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+.footage {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+.still {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.caption {
+  position: absolute;
+  left: 8%;
+  bottom: 3%;
+  width: 84%;
+  text-align: center;
+  font-size: 3vw;
+  line-height: 1.2;
+  color: #fff;
+  padding: 1vw;
+  background: #15171ce8;
+  border-radius: 0.5vw;
+}
+.cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2vw;
+  height: 2.5vw;
+  z-index: 5;
+  filter: drop-shadow(0 1px 2px #000);
+}
+.ripple {
+  position: absolute;
+  width: 4vw;
+  height: 4vw;
+  border: 3px solid #e8b04b;
+  border-radius: 50%;
+  z-index: 4;
+}
+.callout {
+  position: absolute;
+  top: 15%;
+  right: 8%;
+  font-size: 2.5vw;
+  background: #232731;
+  padding: 2vw;
+  border-left: 3px solid #e8b04b;
+}
+pre {
+  font-size: 3vw;
+  text-align: left;
+  white-space: pre-wrap;
+}
+@media (max-aspect-ratio: 1/1) {
+  .viewport {
+    width: min(94vw, calc(52vh * var(--source-ratio, 1.6)));
+    top: 18%;
+    height: min(52vh, calc(94vw / var(--source-ratio, 1.6)));
+  }
+  h1 {
+    font-size: 10vw;
+  }
+  .caption {
+    font-size: 5vw;
+    bottom: 15%;
+  }
+  .card p {
+    font-size: 5vw;
+  }
+}
+.caption,
+.card {
+  font-family: monospace;
+}
+.caption {
+  text-align: left;
+  border-left: 3px solid #e8b04b;
+}
+.card {
+  background: #111820;
+}

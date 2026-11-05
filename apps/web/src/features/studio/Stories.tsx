@@ -18,6 +18,7 @@ import {
 import { AnglesSheet } from "./Angles";
 import { AgentPicker, JobFeedback, useJobs } from "./jobs";
 import { PublishSheet } from "./Publish";
+import { VideoLauncher } from "../video/Launcher";
 import { Attachments } from "../image/Attachments";
 export function Stories({ p, storyId }: { p: ProjectRow; storyId?: string }) {
   const [create, setCreate] = useState(false);
@@ -106,6 +107,7 @@ function StoryEditor({ p, view }: { p: ProjectRow; view: StoryView }) {
         />
       </label>
       <span className="chip">{story.status}</span>
+      <VideoLauncher p={p} story={view} />
 
       {!view.posts.length && (
         <div className="actions">

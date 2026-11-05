@@ -24,6 +24,8 @@ import { backup } from "./backup.js";
 import { agents, doctor } from "./doctor.js";
 import { Content } from "./content.js";
 import { contentRoutes } from "./content-routes.js";
+import { VideoStudio } from "./video/studio.js";
+import { videoRoutes } from "./video/routes.js";
 import { ImageStudio } from "./image/studio.js";
 import { imageRoutes } from "./image/routes.js";
 export function createApp(
@@ -224,6 +226,8 @@ export function createApp(
   contentRoutes(app, content);
   const images = new ImageStudio(content);
   imageRoutes(app, images);
+  const videos = new VideoStudio(images);
+  videoRoutes(app, videos);
   app.get("/api/fs/home", (c) =>
     c.json({ home: options.fsHome || os.homedir() }),
   );
@@ -240,6 +244,7 @@ export function createApp(
     projects,
     content,
     images,
+    videos,
     db,
     async close() {
       await content.jobs.close();

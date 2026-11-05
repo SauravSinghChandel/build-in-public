@@ -21,6 +21,7 @@ import { git } from "../git.js";
 import { atomicJsonWrite } from "../bip/store.js";
 import { Assets, safeFile, thumbDir } from "./assets.js";
 import { RenderOrigin, renderAndCheck } from "./render.js";
+import { executeStep } from "../video/capture.js";
 import { validateComposition } from "./validate.js";
 const templates = fileURLToPath(
   new URL("../../../../packages/templates/image/", import.meta.url),
@@ -199,7 +200,17 @@ export class ImageStudio {
       if (e.code === "ENOENT") return [];
       throw e;
     });
-    return Promise.all(entries.map((id) => this.view(project, id)));
+    const images = [];
+    for (const id of entries) {
+      const c = JSON.parse(
+        await fs.readFile(
+          await safeFile(dir, id + "/composition.json"),
+          "utf8",
+        ),
+      );
+      if (c.type === "image") images.push(await this.view(project, id));
+    }
+    return images;
   }
   async create(
     project: string,
@@ -419,13 +430,14 @@ export class ImageStudio {
       payload,
     );
   }
-  private async agent(
+  async agent(
     job: JobView,
     workspace: string,
     prompt: string,
     schema: z.ZodType,
     signal: AbortSignal,
     write = false,
+    images: string[] = [],
   ) {
     const actualWorkspace = await fs.realpath(workspace);
     if (
@@ -454,6 +466,7 @@ export class ImageStudio {
       for await (const event of provider(
         job.payload.provider as ProviderId,
       ).run({
+        images,
         task: job.type,
         workspace,
         prompt,
@@ -622,6 +635,10 @@ export class ImageStudio {
       for (const step of input.steps) {
         if (signal.aborted) throw Error("Cancelled");
         const locator = step.selector ? page.locator(step.selector) : undefined;
+        if (step.action === "pause" || step.action === "scrollTo") {
+          await executeStep(page, step);
+          continue;
+        }
         switch (step.action) {
           case "click":
             await locator!.click();

@@ -7,6 +7,8 @@ import { atomicJsonWrite } from "./bip/store.js";
 const Config = z.strictObject({
   claudeBin: z.string().default("claude"),
   codexBin: z.string().default("codex"),
+  chromiumPath: z.string().optional(),
+  videoConfigHome: z.string().optional(),
   port: z.number().int().min(1).max(65535).default(4310),
 });
 export function readConfig() {
@@ -38,4 +40,9 @@ export function appPort() {
     .parse(process.env.BIP_PORT || readConfig().port);
 }
 
-export function binaryFor(id: "claude" | "codex") { return process.env[id === "claude" ? "BIP_CLAUDE_BIN" : "BIP_CODEX_BIN"] || readConfig()[id === "claude" ? "claudeBin" : "codexBin"]; }
+export function binaryFor(id: "claude" | "codex") {
+  return (
+    process.env[id === "claude" ? "BIP_CLAUDE_BIN" : "BIP_CODEX_BIN"] ||
+    readConfig()[id === "claude" ? "claudeBin" : "codexBin"]
+  );
+}

@@ -17,6 +17,11 @@ export function JobEvents() {
     const source = new EventSource("/api/events");
     source.addEventListener("job", (event) => {
       const e = JSON.parse((event as MessageEvent).data);
+      if (e.type === "progress" && e.message)
+        q.setQueryData<Record<string, string>>(["partials"], (old) => ({
+          ...old,
+          [e.jobId]: e.message,
+        }));
       if (e.type === "text")
         q.setQueryData<Record<string, string>>(["partials"], (old) => ({
           ...old,

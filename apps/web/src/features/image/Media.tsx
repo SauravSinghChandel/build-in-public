@@ -12,6 +12,8 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message, ErrorBox } from "../../components/workspace";
 import { AgentPicker, JobFeedback, useJobs } from "../studio/jobs";
+import { VideoLauncher } from "../video/Launcher";
+import { CaptureSteps } from "./CaptureSteps";
 import { ImageStudio } from "./Studio";
 export const assetUrl = (project: string, sha: string) =>
   `/api/projects/${project}/assets/${sha}`;
@@ -19,6 +21,8 @@ export function useAssets(project: string) {
   return useQuery({
     queryKey: ["assets", project],
     queryFn: () => api<AssetData[]>(`/projects/${project}/assets`),
+    select: (rows) =>
+      rows.filter((a, i) => rows.findIndex((v) => v.sha === a.sha) === i),
   });
 }
 export function Media({
@@ -88,15 +92,17 @@ export function Media({
   const visible =
     assets.data?.filter(
       (a) =>
-        filter === "All" ||
-        a.kind ===
-          (
-            {
-              Screenshots: "screenshot",
-              Uploads: "upload",
-              Images: "image_render",
-            } as Record<string, string>
-          )[filter],
+        a.mime.startsWith("image/") &&
+        a.kind !== "contact_sheet" &&
+        (filter === "All" ||
+          a.kind ===
+            (
+              {
+                Screenshots: "screenshot",
+                Uploads: "upload",
+                Images: "image_render",
+              } as Record<string, string>
+            )[filter]),
     ) || [];
   return (
     <section className="media-library">
@@ -105,7 +111,14 @@ export function Media({
         <div className="actions">
           <Button
             onClick={() => {
-              setSource(source || assets.data?.[0]?.sha || "");
+              setSource(
+                source ||
+                  assets.data?.find(
+                    (a) =>
+                      a.mime.startsWith("image/") && a.kind !== "contact_sheet",
+                  )?.sha ||
+                  "",
+              );
               setCreate(true);
             }}
           >
@@ -127,6 +140,7 @@ export function Media({
           </label>
         </div>
       </div>
+      {!onPick && <VideoLauncher p={p} />}
       <div className="actions media-filters">
         {["All", "Screenshots", "Uploads", "Images"].map((f) => (
           <Button
@@ -211,13 +225,18 @@ export function Media({
                 onChange={(e) => setSource(e.target.value)}
               >
                 <option value="">Choose a source</option>
-                {assets.data?.map((a) => (
-                  <option key={a.sha} value={a.sha}>
-                    {a.provenance.type === "upload"
-                      ? a.provenance.filename
-                      : a.kind + " " + a.sha.slice(0, 8)}
-                  </option>
-                ))}
+                {assets.data
+                  ?.filter(
+                    (a) =>
+                      a.mime.startsWith("image/") && a.kind !== "contact_sheet",
+                  )
+                  .map((a) => (
+                    <option key={a.sha} value={a.sha}>
+                      {a.provenance.type === "upload"
+                        ? a.provenance.filename
+                        : a.kind + " " + a.sha.slice(0, 8)}
+                    </option>
+                  ))}
               </select>
             </label>
             <label className="field">
@@ -239,13 +258,19 @@ export function Media({
                   value={second || source}
                   onChange={(e) => setSecond(e.target.value)}
                 >
-                  {assets.data?.map((a) => (
-                    <option key={a.sha} value={a.sha}>
-                      {a.provenance.type === "upload"
-                        ? a.provenance.filename
-                        : a.sha.slice(0, 8)}
-                    </option>
-                  ))}
+                  {assets.data
+                    ?.filter(
+                      (a) =>
+                        a.mime.startsWith("image/") &&
+                        a.kind !== "contact_sheet",
+                    )
+                    .map((a) => (
+                      <option key={a.sha} value={a.sha}>
+                        {a.provenance.type === "upload"
+                          ? a.provenance.filename
+                          : a.sha.slice(0, 8)}
+                      </option>
+                    ))}
                 </select>
               </label>
             )}
@@ -307,28 +332,6 @@ export function CaptureDialog({
       onClose();
     }
   }, [captureJob?.status]);
-  let stepRows: {
-    action: string;
-    selector?: string;
-    text?: string;
-    value?: string | number;
-    ms?: number;
-  }[] = [];
-  try {
-    const parsed = JSON.parse(steps);
-    if (
-      Array.isArray(parsed) &&
-      parsed.length <= 50 &&
-      parsed.every(
-        (v) => v && typeof v === "object" && typeof v.action === "string",
-      )
-    )
-      stepRows = parsed;
-  } catch {}
-  const editSteps = (rows: typeof stepRows) => {
-    setSteps(JSON.stringify(rows, null, 2));
-    setApproved(false);
-  };
   const run = async () => {
     try {
       setError("");
@@ -460,113 +463,13 @@ export function CaptureDialog({
           </Button>
         </div>
         <JobFeedback job={describeJob} />
-        <div className="capture-step-editor" aria-label="Manual steps editor">
-          {stepRows.map((step, i) => (
-            <div className="capture-step" key={i}>
-              <select
-                aria-label={`Step ${i + 1} action`}
-                value={step.action}
-                onChange={(e) =>
-                  editSteps(
-                    stepRows.map((v, n) =>
-                      n === i ? { action: e.target.value } : v,
-                    ),
-                  )
-                }
-              >
-                {["click", "type", "scroll", "hover", "wait", "press"].map(
-                  (action) => (
-                    <option key={action}>{action}</option>
-                  ),
-                )}
-              </select>
-              {["click", "type", "hover", "scroll", "press"].includes(
-                step.action,
-              ) && (
-                <input
-                  aria-label={`Step ${i + 1} selector`}
-                  placeholder="CSS selector"
-                  value={step.selector || ""}
-                  onChange={(e) =>
-                    editSteps(
-                      stepRows.map((v, n) =>
-                        n === i ? { ...v, selector: e.target.value } : v,
-                      ),
-                    )
-                  }
-                />
-              )}
-              {step.action === "type" && (
-                <input
-                  aria-label={`Step ${i + 1} text`}
-                  placeholder="Text to type"
-                  value={step.text || ""}
-                  onChange={(e) =>
-                    editSteps(
-                      stepRows.map((v, n) =>
-                        n === i ? { ...v, text: e.target.value } : v,
-                      ),
-                    )
-                  }
-                />
-              )}
-              {step.action === "wait" && (
-                <input
-                  aria-label={`Step ${i + 1} milliseconds`}
-                  type="number"
-                  min={0}
-                  max={30000}
-                  value={step.ms ?? 1000}
-                  onChange={(e) =>
-                    editSteps(
-                      stepRows.map((v, n) =>
-                        n === i ? { ...v, ms: Number(e.target.value) } : v,
-                      ),
-                    )
-                  }
-                />
-              )}
-              {["scroll", "press"].includes(step.action) && (
-                <input
-                  aria-label={`Step ${i + 1} value`}
-                  placeholder={
-                    step.action === "press" ? "Enter" : "Scroll pixels"
-                  }
-                  value={step.value ?? ""}
-                  onChange={(e) =>
-                    editSteps(
-                      stepRows.map((v, n) =>
-                        n === i
-                          ? {
-                              ...v,
-                              value:
-                                step.action === "scroll"
-                                  ? Number(e.target.value)
-                                  : e.target.value,
-                            }
-                          : v,
-                      ),
-                    )
-                  }
-                />
-              )}
-              <Button
-                aria-label={`Remove step ${i + 1}`}
-                onClick={() => editSteps(stepRows.filter((_, n) => n !== i))}
-              >
-                Remove
-              </Button>
-            </div>
-          ))}
-          <Button
-            disabled={stepRows.length >= 50}
-            onClick={() =>
-              editSteps([...stepRows, { action: "wait", ms: 1000 }])
-            }
-          >
-            Add step
-          </Button>
-        </div>
+        <CaptureSteps
+          steps={steps}
+          onChange={(v) => {
+            setSteps(v);
+            setApproved(false);
+          }}
+        />
         <label className="field">
           Steps JSON
           <textarea

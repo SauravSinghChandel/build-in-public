@@ -11,12 +11,15 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message } from "../../components/workspace";
 import { AgentPicker, JobFeedback, useJobs } from "../studio/jobs";
-import { Media, assetUrl } from "./Media";
+import { useAssets, Media, assetUrl } from "./Media";
 export function Attachments({ p, post }: { p: ProjectRow; post: PostData }) {
   const [open, setOpen] = useState(false),
     [agent, setAgent] = useState<"claude" | "codex">("claude"),
     [altJob, setAltJob] = useState<{ id: string; sha: string }>(),
     [alts, setAlts] = useState<Record<string, string>>({});
+  const assets = useAssets(p.id);
+  const isVideo = (sha: string) =>
+    assets.data?.some((a) => a.sha === sha && a.mime.startsWith("video/"));
   const q = useQueryClient(),
     jobs = useJobs();
   const job = jobs.data?.find((j) => j.id === altJob?.id);
@@ -47,44 +50,12 @@ export function Attachments({ p, post }: { p: ProjectRow; post: PostData }) {
   };
   return (
     <div className="attached-media">
-      <h3>Images</h3>
-      {post.media.map((m) => (
-        <div className="attached-image" key={m.sha}>
-          <img src={assetUrl(p.id, m.sha)} alt={m.alt || "Attached image"} />
-          <label className="field">
-            Alt text
-            <input
-              value={alts[m.sha] ?? m.alt ?? ""}
-              onChange={(e) =>
-                setAlts((a) => ({ ...a, [m.sha]: e.target.value }))
-              }
-              onBlur={() =>
-                void save(
-                  post.media.map((v) =>
-                    v.sha === m.sha ? { ...v, alt: alts[m.sha] ?? m.alt } : v,
-                  ),
-                ).catch(message)
-              }
-            />
-          </label>
-          <div className="actions">
-            <Button
-              disabled={["queued", "running"].includes(job?.status || "")}
-              onClick={() =>
-                void api<JobView>(
-                  `/projects/${p.id}/assets/${m.sha}/alt`,
-                  "POST",
-                  {
-                    provider: agent,
-                    context: "Image attached to a " + post.platform + " post",
-                  },
-                )
-                  .then((j) => setAltJob({ id: j.id, sha: m.sha }))
-                  .catch(message)
-              }
-            >
-              Suggest alt text
-            </Button>
+      <h3>Media</h3>
+      {post.media.map((m) =>
+        isVideo(m.sha) ? (
+          <div className="attached-image" key={m.sha}>
+            <span className="chip">Video</span>
+            <video src={assetUrl(p.id, m.sha)} controls preload="metadata" />
             <Button
               onClick={() =>
                 void save(post.media.filter((v) => v.sha !== m.sha)).catch(
@@ -92,12 +63,64 @@ export function Attachments({ p, post }: { p: ProjectRow; post: PostData }) {
                 )
               }
             >
-              Remove image
+              Remove video
             </Button>
           </div>
-        </div>
-      ))}
-      {post.media.length > 0 && (
+        ) : (
+          <div className="attached-image" key={m.sha}>
+            <img src={assetUrl(p.id, m.sha)} alt={m.alt || "Attached image"} />
+
+            <label className="field">
+              Alt text
+              <input
+                value={alts[m.sha] ?? m.alt ?? ""}
+                onChange={(e) =>
+                  setAlts((a) => ({ ...a, [m.sha]: e.target.value }))
+                }
+                onBlur={() =>
+                  void save(
+                    post.media.map((v) =>
+                      v.sha === m.sha ? { ...v, alt: alts[m.sha] ?? m.alt } : v,
+                    ),
+                  ).catch(message)
+                }
+              />
+            </label>
+            <div className="actions">
+              <Button
+                disabled={
+                  isVideo(m.sha) ||
+                  ["queued", "running"].includes(job?.status || "")
+                }
+                onClick={() =>
+                  void api<JobView>(
+                    `/projects/${p.id}/assets/${m.sha}/alt`,
+                    "POST",
+                    {
+                      provider: agent,
+                      context: "Image attached to a " + post.platform + " post",
+                    },
+                  )
+                    .then((j) => setAltJob({ id: j.id, sha: m.sha }))
+                    .catch(message)
+                }
+              >
+                Suggest alt text
+              </Button>
+              <Button
+                onClick={() =>
+                  void save(post.media.filter((v) => v.sha !== m.sha)).catch(
+                    message,
+                  )
+                }
+              >
+                Remove media
+              </Button>
+            </div>
+          </div>
+        ),
+      )}
+      {post.media.some((m) => !isVideo(m.sha)) && (
         <AgentPicker p={p} task="image.alt" value={agent} onChange={setAgent} />
       )}
       <JobFeedback job={job} />
@@ -121,56 +144,77 @@ export function PublishImages({
   project: string;
   post: PostData;
 }) {
+  const assets = useAssets(project);
   return (
     <>
-      {post.media.map((m) => (
-        <div className="attached-image" key={m.sha}>
-          <img src={assetUrl(project, m.sha)} alt={m.alt || "Attached image"} />
-          <p className="muted">{m.alt || "No alt text yet"}</p>
-          <div className="actions">
+      {post.media.map((m) =>
+        assets.data?.some(
+          (a) => a.sha === m.sha && a.mime.startsWith("video/"),
+        ) ? (
+          <div className="attached-image" key={m.sha}>
+            <span className="chip">Video</span>
+            <video controls src={assetUrl(project, m.sha)} />
             <a
               className="button secondary"
               href={assetUrl(project, m.sha) + "?download=1"}
               download
             >
-              Download image
+              Download video
             </a>
-            {typeof ClipboardItem !== "undefined" &&
-              navigator.clipboard?.write && (
-                <Button
-                  onClick={() =>
-                    void fetch(assetUrl(project, m.sha))
-                      .then((r) => r.blob())
-                      .then(async (blob) => {
-                        // Clipboard APIs generally accept PNG only; convert JPEG/WebP through a canvas.
-                        const bitmap = await createImageBitmap(blob),
-                          canvas = document.createElement("canvas");
-                        canvas.width = bitmap.width;
-                        canvas.height = bitmap.height;
-                        canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
-                        bitmap.close();
-                        const png = await new Promise<Blob>((resolve, reject) =>
-                          canvas.toBlob(
-                            (b) =>
-                              b
-                                ? resolve(b)
-                                : reject(Error("Could not copy image")),
-                            "image/png",
-                          ),
-                        );
-                        await navigator.clipboard.write([
-                          new ClipboardItem({ "image/png": png }),
-                        ]);
-                      })
-                      .catch(message)
-                  }
-                >
-                  Copy image
-                </Button>
-              )}
           </div>
-        </div>
-      ))}
+        ) : (
+          <div className="attached-image" key={m.sha}>
+            <img
+              src={assetUrl(project, m.sha)}
+              alt={m.alt || "Attached image"}
+            />
+            <p className="muted">{m.alt || "No alt text yet"}</p>
+            <div className="actions">
+              <a
+                className="button secondary"
+                href={assetUrl(project, m.sha) + "?download=1"}
+                download
+              >
+                Download image
+              </a>
+              {typeof ClipboardItem !== "undefined" &&
+                navigator.clipboard?.write && (
+                  <Button
+                    onClick={() =>
+                      void fetch(assetUrl(project, m.sha))
+                        .then((r) => r.blob())
+                        .then(async (blob) => {
+                          // Clipboard APIs generally accept PNG only; convert JPEG/WebP through a canvas.
+                          const bitmap = await createImageBitmap(blob),
+                            canvas = document.createElement("canvas");
+                          canvas.width = bitmap.width;
+                          canvas.height = bitmap.height;
+                          canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+                          bitmap.close();
+                          const png = await new Promise<Blob>(
+                            (resolve, reject) =>
+                              canvas.toBlob(
+                                (b) =>
+                                  b
+                                    ? resolve(b)
+                                    : reject(Error("Could not copy image")),
+                                "image/png",
+                              ),
+                          );
+                          await navigator.clipboard.write([
+                            new ClipboardItem({ "image/png": png }),
+                          ]);
+                        })
+                        .catch(message)
+                    }
+                  >
+                    Copy image
+                  </Button>
+                )}
+            </div>
+          </div>
+        ),
+      )}
     </>
   );
 }
