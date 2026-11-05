@@ -26,14 +26,8 @@ import {
 } from "./agents/context.js";
 import { git } from "./git.js";
 
-/** JSON Schema for agent CLIs. The claude CLI rejects a `$schema` draft-2020-12 declaration, so drop it. */
-export function agentSchema(schema: z.ZodType): object {
-  const { $schema: _ignored, ...rest } = z.toJSONSchema(schema) as Record<
-    string,
-    unknown
-  >;
-  return rest;
-}
+export { agentSchema, parseAgentOutput } from "./agents/schema.js";
+import { agentSchema, parseAgentOutput } from "./agents/schema.js";
 const Summary = z.strictObject({
   what_it_is: z.string(),
   who_its_for: z.string(),
@@ -270,7 +264,7 @@ export class Content {
     if (signal.aborted) throw Error("Cancelled");
     if (!completed || errors.length)
       throw Error(errors.join("\n") || "Agent did not complete");
-    const output = schema.parse(result) as any;
+    const output = parseAgentOutput(schema, result) as any;
     if (job.type === "story.angles") return output;
     if (job.type === "project.summary") {
       const head = summaryHead;
