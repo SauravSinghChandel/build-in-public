@@ -131,17 +131,19 @@ export function AppSettings({ onAdd }: { onAdd: () => void }) {
                   <p>
                     {a.installed ? a.version : "Not installed"} · {a.auth}
                   </p>
-                  <p className="muted">
-                    {a.hint
-                      .split(/(codex login|claude)/)
-                      .map((part, i) =>
-                        part === "claude" || part === "codex login" ? (
-                          <code key={i}>{part}</code>
-                        ) : (
-                          part
-                        ),
-                      )}
-                  </p>
+                  {a.hint && (
+                    <p className="muted">
+                      {a.hint
+                        .split(/(codex login|claude)/)
+                        .map((part, i) =>
+                          part === "claude" || part === "codex login" ? (
+                            <code key={i}>{part}</code>
+                          ) : (
+                            part
+                          ),
+                        )}
+                    </p>
+                  )}
                 </section>
               ))}
             </>

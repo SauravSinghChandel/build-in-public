@@ -60,3 +60,8 @@ Center: canvas preview with fit/100% zoom. Left: sources (screenshot thumbnails,
 
 ## Deliverable
 `M3-RESULT.md` at the repo root, ≤ 50 lines.
+
+## Environment
+- Worktree `/home/justbuster/projects/build-in-public-m3`, branch `m3-image-studio` (already checked out). Install with `npx --yes pnpm@10.34.9 install`.
+- Same notes as M1/M2: `tsx`/`tsc`, cached Playwright Chromium (`chromiumSandbox: false` in tests if needed), fake agents via `BIP_CLAUDE_BIN`/`BIP_CODEX_BIN` for all tests. Real agent CLIs can't run inside your sandbox; the reviewer runs the live smoke test afterwards.
+- Agent JSON Schemas must go through `agentSchema()` (strips `$schema`; the claude CLI rejects draft 2020-12).

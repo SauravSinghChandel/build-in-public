@@ -58,12 +58,14 @@ export function Overview({
   let previous = "";
   function select(index: number, shift: boolean) {
     const sha = commits![index].sha;
+    const start = shift ? Math.min(anchor.current, index) : index;
+    const end = shift ? Math.max(anchor.current, index) : index;
     setSelected((old) => {
       const next = new Set(old);
       const value = !next.has(sha);
       for (
-        let n = shift ? Math.min(anchor.current, index) : index;
-        n <= (shift ? Math.max(anchor.current, index) : index);
+        let n = start;
+        n <= end;
         n++
       ) {
         if (value) next.add(commits![n].sha);

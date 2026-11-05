@@ -16,9 +16,9 @@ export function Summary({ p }: { p: ProjectRow }) {
     }),
     jobs = useJobs(),
     refresh = useRefresh();
-  const job = jobs.data
-    ?.filter((j) => j.project_id === p.id && j.type === "project.summary")
-    .at(-1);
+  const job = jobs.data?.find(
+    (j) => j.project_id === p.id && j.type === "project.summary",
+  );
   return (
     <section className="summary-panel">
       <h2>Repository summary</h2>

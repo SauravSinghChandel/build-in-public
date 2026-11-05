@@ -128,23 +128,69 @@ export function JobFeedback({ job }: { job?: JobView }) {
 }
 export function JobsIndicator() {
   const jobs = useJobs();
-  const active =
-    jobs.data?.filter((j) => ["running", "queued"].includes(j.status)) || [];
-  const stopped =
-    jobs.data?.filter((j) => ["failed", "interrupted"].includes(j.status)) ||
-    [];
+  const projects = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => api<ProjectRow[]>("/projects"),
+  });
+  const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<string[]>(() =>
+    JSON.parse(localStorage.getItem("bip-dismissed-jobs") || "[]"),
+  );
+  const visible = jobs.data?.filter((j) => !dismissed.includes(j.id)) || [];
+  const running = visible.filter((j) =>
+    ["running", "queued"].includes(j.status),
+  ).length;
+  const failed = visible.filter((j) =>
+    ["failed", "interrupted"].includes(j.status),
+  ).length;
+  const label = running
+    ? `${running} ${running === 1 ? "job" : "jobs"} running`
+    : failed
+      ? `${failed} ${failed === 1 ? "job" : "jobs"} failed`
+      : "Jobs";
   return (
     <div className="jobs-indicator">
-      <span>
-        {active.length
-          ? `${active.length} jobs running`
-          : stopped.length
-            ? `${stopped.length} jobs need attention`
-            : ""}
-      </span>
-      {stopped.slice(-2).map((j) => (
-        <JobFeedback key={j.id} job={j} />
-      ))}
+      <button onClick={() => setOpen(!open)} aria-expanded={open}>
+        {label}
+      </button>
+      {open && (
+        <div className="jobs-popover" role="dialog" aria-label="Jobs">
+          {visible.map((j) => (
+            <div key={j.id}>
+              <strong>{j.type}</strong>
+              <small>
+                {" "}
+                ·{" "}
+                {projects.data?.find((p) => p.id === j.project_id)?.name ||
+                  "Project"}{" "}
+                · {j.status}
+              </small>
+              {j.error && <p title={j.error}>{j.error.slice(0, 180)}</p>}
+              {["failed", "interrupted", "cancelled"].includes(j.status) && (
+                <Button
+                  onClick={() =>
+                    void api(`/jobs/${j.id}/resume`, "POST").catch(message)
+                  }
+                >
+                  Retry
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  const next = [...dismissed, j.id];
+                  setDismissed(next);
+                  localStorage.setItem(
+                    "bip-dismissed-jobs",
+                    JSON.stringify(next),
+                  );
+                }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

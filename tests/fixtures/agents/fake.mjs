@@ -22,6 +22,15 @@ else if(prompt.includes('TASK: post.edit')) {
  output=prompt.includes('Edit only x.')?{x:{parts},highlights:[],claims_to_verify:[]}:{linkedin:{text:'I simplified the workflow around one repeated step.\n\n'+('The useful part was making the next action clear and keeping the work close to its context. '.repeat(8))},highlights:[],claims_to_verify:[]};
 }
 if(prompt.includes('TASK: post.draft')) { const recorded=fs.readFileSync(path.join(dir,`${provider}-draft.jsonl`),'utf8').trim().split('\n').map(JSON.parse); output=provider==='claude'?recorded.find(e=>e.type==='result').structured_output:JSON.parse(recorded.find(e=>e.type==='item.completed'&&e.item.type==='agent_message').item.text); }
+if(prompt.includes('TASK: image.edit')) {
+ const file=path.join(process.cwd(),'composition.json');
+ const comp=JSON.parse(fs.readFileSync(file,'utf8'));
+ comp.slots.headline='A headline from the fake agent';
+ fs.writeFileSync(file,JSON.stringify(comp,null,2));
+ if(prompt.includes('FILTER_FAIL'))fs.appendFileSync(path.join(process.cwd(),'styles.css'),'\nimg[data-bip-source]{filter:saturate(1.4)}');
+ output={done:true};
+} else if(prompt.includes('TASK: image.steps'))output={steps:[{action:'wait',ms:50}]};
+else if(prompt.includes('TASK: image.alt'))output={alt:'A screenshot of the project workspace.'};
 if(mode==='invalid')output={wrong:'shape'};
 if(output) lines=lines.map(e=>{
  if(e.type==='result')return {...e,structured_output:output};

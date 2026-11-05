@@ -33,7 +33,10 @@ interface Registry {
   added_at: string;
 }
 export class Projects {
-  private identities = new Map<string, Promise<{currentUserEmail?: string; currentUserName?: string}>>();
+  private identities = new Map<
+    string,
+    Promise<{ currentUserEmail?: string; currentUserName?: string }>
+  >();
   private opening = new Map<string, ReturnType<typeof openProject>>();
   private stores = new Map<string, Awaited<ReturnType<typeof openProject>>>();
   constructor(
@@ -80,10 +83,27 @@ export class Projects {
     return resolveSafe(input, [
       this.home,
       ...this.registry().map((p) => p.path),
+      ...this.dirs().map((d) => d.path),
     ]);
   }
+  private async explicitRoot(input: string) {
+    if (input.split(/[\\/]/).includes(".."))
+      throw Error("Path traversal rejected");
+    const expanded = input.replace(/^~(?=\/|$)/, this.home);
+    if (!path.isAbsolute(expanded))
+      throw Error("Choose an absolute folder path");
+    const root = await fs.realpath(expanded);
+    if (!(await fs.stat(root)).isDirectory()) throw Error("Choose a folder");
+    // An explicit scan authorizes this canonical root for subsequent tracking.
+    this.db
+      .prepare(
+        "INSERT OR IGNORE INTO tracked_dirs(id,path,depth) VALUES(?,?,2)",
+      )
+      .run(randomUUID(), root);
+    return root;
+  }
   async addDir(root: string, depth: number) {
-    const p = await this.safe(root);
+    const p = await this.explicitRoot(root);
     this.db
       .prepare(
         "INSERT INTO tracked_dirs(id,path,depth) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET depth=excluded.depth",
@@ -92,7 +112,7 @@ export class Projects {
     return this.dirs();
   }
   async scan(root: string, depth: number): Promise<DiscoveredRepo[]> {
-    const safe = await this.safe(root);
+    const safe = await this.explicitRoot(root);
     await this.refreshMissing();
     const paths = await discover(safe, depth);
     const result: DiscoveredRepo[] = [];
@@ -264,13 +284,35 @@ export class Projects {
       remoteUrl: git.remoteUrl || undefined,
       path: r.path,
       status: r.status,
-      ...await (() => {
-        if (!this.identities.has(id)) this.identities.set(id, Promise.all(['user.email', 'user.name'].map(key => runGit(r.path, ['config', key]).then(s => s.trim()).catch(() => undefined))).then(([currentUserEmail, currentUserName]) => ({currentUserEmail, currentUserName})));
+      ...(await (() => {
+        if (!this.identities.has(id))
+          this.identities.set(
+            id,
+            Promise.all(
+              ["user.email", "user.name"].map((key) =>
+                runGit(r.path, ["config", key])
+                  .then((s) => s.trim())
+                  .catch(() => undefined),
+              ),
+            ).then(([currentUserEmail, currentUserName]) => ({
+              currentUserEmail,
+              currentUserName,
+            })),
+          );
         return this.identities.get(id)!;
-      })(),
+      })()),
       unsharedCount: count.count,
       markerLost: count.markerLost,
-      lastPostAt: (await Promise.all((await s.listStories()).map(story => s.listPosts(story.id)))).flat().map(post=>post.publishedAt||'').sort().at(-1)||null,
+      lastPostAt:
+        (
+          await Promise.all(
+            (await s.listStories()).map((story) => s.listPosts(story.id)),
+          )
+        )
+          .flat()
+          .map((post) => post.publishedAt || "")
+          .sort()
+          .at(-1) || null,
       readOnly: s.readOnly,
       bipSize: await folderSize(s.root),
     } as ProjectRow;

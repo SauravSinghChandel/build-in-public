@@ -125,8 +125,7 @@ export interface Commit {
   deletions: number;
 }
 export interface ProjectRow
-  extends Omit<ProjectData, "remoteUrl">,
-    Omit<GitInfo, "remoteUrl"> {
+  extends Omit<ProjectData, "remoteUrl">, Omit<GitInfo, "remoteUrl"> {
   remoteUrl?: string;
   path: string;
   status: "active" | "missing" | "archived";
@@ -258,6 +257,116 @@ export interface JobView {
   result: any;
   error: string | null;
   created_at: string;
-  started_at: string;
+  started_at: string | null;
+  finished_at?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
   partial?: string;
+}
+
+export const ImageSize = z.enum(["x", "linkedin", "square", "portrait"]);
+export const imageSizes = {
+  x: [1200, 675],
+  linkedin: [1200, 627],
+  square: [1080, 1080],
+  portrait: [1080, 1350],
+} as const;
+export const ImagePreset = z.enum([
+  "minimal",
+  "launch",
+  "technical",
+  "comparison",
+]);
+export const CaptureStep = z
+  .strictObject({
+    action: z.enum(["click", "type", "scroll", "hover", "wait", "press"]),
+    selector: z.string().max(1000).optional(),
+    text: z.string().max(10000).optional(),
+    value: z.union([z.string().max(1000), z.number().finite()]).optional(),
+    ms: z.number().int().min(0).max(30000).optional(),
+  })
+  .superRefine((s, c) => {
+    if (["click", "type", "hover"].includes(s.action) && !s.selector)
+      c.addIssue({ code: "custom", message: "This action needs a selector" });
+    if (s.action === "type" && s.text === undefined)
+      c.addIssue({ code: "custom", message: "Type needs text" });
+    if (s.action === "press" && typeof s.value !== "string")
+      c.addIssue({ code: "custom", message: "Press needs a key value" });
+  });
+export const CaptureInput = z.strictObject({
+  url: z
+    .url()
+    .refine(
+      (v) => ["http:", "https:"].includes(new URL(v).protocol),
+      "Use http or https",
+    ),
+  viewport: z.enum(["1440x900", "1280x800", "390x844"]).default("1440x900"),
+  fullPage: z.boolean().default(false),
+  selector: z.string().max(1000).optional(),
+  waitFor: z.enum(["networkidle", "selector", "delay"]).default("networkidle"),
+  waitSelector: z.string().optional(),
+  delay: z.number().int().min(0).max(30000).default(1000),
+  steps: z.array(CaptureStep).max(50).default([]),
+});
+export const Asset = z.object({
+  sha,
+  kind: z.enum(["screenshot", "upload", "image_render"]),
+  mime: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  createdAt: stamp,
+  provenance: z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("capture"),
+      url: z.string(),
+      steps: z.array(CaptureStep).optional(),
+      viewport: z.object({
+        width: z.number(),
+        height: z.number(),
+        dpr: z.literal(2),
+      }),
+    }),
+    z.object({ type: z.literal("upload"), filename: z.string() }),
+    z.object({
+      type: z.literal("render"),
+      compositionId: z.string(),
+      commit: z.string(),
+    }),
+  ]),
+});
+export type AssetData = z.infer<typeof Asset>;
+export const Composition = z.strictObject({
+  schemaVersion: z.literal(1),
+  id: z.uuid(),
+  type: z.literal("image"),
+  title: z.string().max(200),
+  preset: ImagePreset,
+  width: z.number().int().min(100).max(2400),
+  height: z.number().int().min(100).max(2400),
+  slots: z.strictObject({
+    headline: z.string().max(300),
+    subhead: z.string().max(1000),
+    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    background: z.enum(["solid", "radial", "noise", "dominant"]),
+    frame: z.enum(["none", "browser", "window", "phone"]),
+    padding: z.number().min(16).max(120),
+    shadow: z.number().min(0).max(100),
+    annotations: z.array(z.string().max(120)).max(3),
+  }),
+  sources: z.array(sha).min(1).max(2),
+  allowScreenshotEdits: z.boolean().default(false),
+  storyId: z.uuid().optional(),
+});
+export type CompositionData = z.infer<typeof Composition>;
+export interface ImageRevision {
+  commit: string;
+  instruction: string;
+  createdAt: string;
+}
+export interface CompositionView {
+  composition: CompositionData;
+  commit: string;
+  revisions: ImageRevision[];
+  previewUrl: string;
+  fidelity?: { pass: boolean; errors: string[]; diffs?: unknown[] };
 }

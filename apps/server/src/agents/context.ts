@@ -12,14 +12,26 @@ const patterns = [
   /(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}/g,
   /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|$)/g,
   /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
-  /\b[A-Z][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[A-Z0-9_]*\s*[:=]\s*["']?[^\s"'\r\n]{4,}["']?/g,
-  /\b(?:KEY|TOKEN|SECRET|PASSWORD)\s*=\s*[^\s\r\n]+/gi,
-  /\b[A-Z][A-Z0-9_]{1,}\s*=\s*["']?[^\s"'\r\n]{4,}["']?/g,
   /"private_key"\s*:\s*"[^"\n]+"/g,
 ];
-export function redact(text: string) {
+export function redact(text: string, filename = "") {
+  if (/(^|\/)(\.env(?:\.|$)|[^/]*\.(?:env|conf|config|ini)$)/i.test(filename))
+    text = text.replace(
+      /^([+-]?)([A-Z0-9_]+)=(?:"[^"\n]*"|'[^'\n]*'|[A-Za-z0-9_\/+=:@-]{4,})$/gm,
+      "$1$2=[REDACTED]",
+    );
   for (const re of patterns) text = text.replace(re, "[REDACTED]");
   return text;
+}
+export function redactDiff(text: string) {
+  let filename = "";
+  return text
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("+++ b/")) filename = line.slice(6);
+      return redact(line, filename);
+    })
+    .join("\n");
 }
 export function secretWarnings(text: string) {
   return redact(text) !== text
@@ -198,7 +210,7 @@ export async function buildContext(
           ...names,
         ])
       : "";
-    body += `\nCommit ${sha}\n${stat}\n${diff}\n`;
+    body += `\nCommit ${sha}\n${stat}\n${redactDiff(diff)}\n`;
     if (Buffer.byteLength(body) > 34000) break;
   }
   // Redact before truncating: otherwise a boundary could expose half a credential.

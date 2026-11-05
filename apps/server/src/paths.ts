@@ -38,7 +38,8 @@ export async function directorySuggestions(
   prefix: string,
   home = os.homedir(),
 ) {
-  const expanded = (prefix === "~" ? "~/" : prefix).replace(/^~(?=\/|$)/, home) || home + "/";
+  const expanded =
+    (prefix === "~" ? "~/" : prefix).replace(/^~(?=\/|$)/, home) || home + "/";
   const trailing = expanded.endsWith("/");
   const parent = trailing ? expanded : path.dirname(expanded);
   const typed = trailing ? "" : path.basename(expanded);

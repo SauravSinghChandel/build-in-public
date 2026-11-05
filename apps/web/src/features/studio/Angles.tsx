@@ -63,7 +63,7 @@ export function AnglesSheet({
       const title = angle?.title || own;
       const story = await api<StoryData>(`/projects/${p.id}/stories`, "POST", {
         title,
-        brief: note,
+        brief: angle ? `${angle.hook}\n\n${angle.why_interesting}` : own,
         commits,
         angle: angle ? JSON.stringify(angle) : own,
       });
@@ -93,6 +93,12 @@ export function AnglesSheet({
         <label className="field">
           What would you like to share?
           <textarea
+            rows={3}
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height =
+                e.currentTarget.scrollHeight + "px";
+            }}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="A detail you built, learned, or found surprising"
@@ -114,7 +120,7 @@ export function AnglesSheet({
         </div>
         <JobFeedback job={job} />
         {angles?.map((angle, i) => (
-          <label className="angle-row" key={i}>
+          <label className="angle-row" data-selected={chosen === i} key={i}>
             <input
               type="radio"
               name="angle"
@@ -128,7 +134,7 @@ export function AnglesSheet({
             </span>
           </label>
         ))}
-        <label className="field">
+        <label className="angle-row own-angle" data-selected={chosen === -1}>
           <span>
             <input
               type="radio"
