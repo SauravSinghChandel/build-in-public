@@ -5,6 +5,7 @@ import { doctor } from "./doctor.js";
 import { dataHome } from "./paths.js";
 import { openDatabase } from "./db.js";
 import { backup } from "./backup.js";
+import { createApp } from "./app.js";
 const args = process.argv.slice(2);
 const command = args[0] || "start";
 try {
@@ -38,8 +39,36 @@ try {
     } finally {
       db.close();
     }
+  } else if (command === "publish-due") {
+    // The running app's scheduler owns due posts; never compete with it.
+    const port = appPort();
+    const running = await fetch(`http://127.0.0.1:${port}/api/health`, {
+      signal: AbortSignal.timeout(2000),
+    }).then(
+      () => true,
+      () => false,
+    );
+    if (running) {
+      console.log("Build in Public is running; its scheduler posts due items.");
+    } else {
+      const service = createApp({ port });
+      try {
+        await service.projects.rescan();
+        const { enqueued, jobs } = await service.publisher.runDue();
+        for (const j of jobs)
+          console.log(
+            `${j.status === "succeeded" ? "✓" : "✗"} ${j.payload.platform} post ${j.payload.postId}${j.error ? ` — ${j.error}` : ""}`,
+          );
+        console.log(`${enqueued} due post${enqueued === 1 ? "" : "s"} processed.`);
+        if (jobs.some((j) => j.status !== "succeeded")) process.exitCode = 1;
+      } finally {
+        await service.close();
+      }
+    }
   } else
-    throw Error("Usage: bip start | doctor | backup [--project <id> | --all]");
+    throw Error(
+      "Usage: bip start | doctor | publish-due | backup [--project <id> | --all]",
+    );
 } catch (e) {
   console.error(e instanceof Error ? e.message : String(e));
   process.exitCode = 1;

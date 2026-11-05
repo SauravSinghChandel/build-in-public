@@ -135,6 +135,12 @@ test("post studio, assisted publishing and interrupted job resume", async ({
   await expect(
     sheet.getByRole("link", { name: "Open X", exact: true }),
   ).toHaveAttribute("href", /^https:\/\/x.com\/intent\/post\?text=/);
+  // M5: with no connected accounts the sheet stays assisted-only.
+  await expect(sheet.getByRole("button", { name: /Post now/ })).toHaveCount(0);
+  await expect(sheet.getByRole("button", { name: "Schedule…" })).toHaveCount(0);
+  await expect(
+    sheet.getByText("You publish in the platform. Build in Public never posts for you."),
+  ).toBeVisible();
   await sheet
     .getByLabel("Paste the published link")
     .fill("https://x.com/studio/status/123");

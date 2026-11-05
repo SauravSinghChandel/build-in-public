@@ -28,6 +28,9 @@ import { VideoStudio } from "./video/studio.js";
 import { videoRoutes } from "./video/routes.js";
 import { ImageStudio } from "./image/studio.js";
 import { imageRoutes } from "./image/routes.js";
+import { Accounts } from "./publishing/accounts.js";
+import { Publisher } from "./publishing/publisher.js";
+import { publishingRoutes } from "./publishing/routes.js";
 export function createApp(
   options: {
     home?: string;
@@ -36,6 +39,9 @@ export function createApp(
     token?: string;
     dev?: boolean;
     noAuth?: boolean;
+    publishing?: ConstructorParameters<typeof Accounts>[3] & {
+      intervalMs?: number;
+    };
   } = {},
 ) {
   const home = options.home || dataHome(),
@@ -238,6 +244,18 @@ export function createApp(
   imageRoutes(app, images);
   const videos = new VideoStudio(images);
   videoRoutes(app, videos);
+  // Test-only clock shift so scheduling can be exercised without waiting.
+  const offset = Number(process.env.BIP_TEST_CLOCK_OFFSET_MS) || 0;
+  const now = options.publishing?.now ?? (() => Date.now() + offset);
+  const accounts = new Accounts(db, home, port, {
+    ...options.publishing,
+    now,
+  });
+  const publisher = new Publisher(content, accounts, images.assets, {
+    now,
+    intervalMs: options.publishing?.intervalMs,
+  });
+  publishingRoutes(app, accounts, publisher, { dev });
   app.get("/api/fs/home", (c) =>
     c.json({ home: options.fsHome || os.homedir() }),
   );
@@ -255,8 +273,11 @@ export function createApp(
     content,
     images,
     videos,
+    accounts,
+    publisher,
     db,
     async close() {
+      await publisher.stop();
       await content.jobs.close();
       await images.drain();
       await images.origin.close();

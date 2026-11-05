@@ -1,10 +1,11 @@
-import type { PostView } from "@bip/shared";
+import { isOverdue, type PostView } from "@bip/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { api } from "../../api";
 import { ErrorBox, Loading } from "../../components/workspace";
-type Row = PostView & {
+import { ScheduledView } from "./Scheduled";
+export type Row = PostView & {
   projectId: string;
   projectName: string;
   storyTitle: string;
@@ -16,13 +17,41 @@ export function ContentPage() {
   });
   const [project, setProject] = useState(""),
     [platform, setPlatform] = useState(""),
-    [status, setStatus] = useState("");
+    [status, setStatus] = useState(""),
+    [view, setView] = useState<"all" | "scheduled">(
+      new URLSearchParams(location.search).get("view") === "scheduled"
+        ? "scheduled"
+        : "all",
+    );
   return (
     <>
       <header>
         <h1>Content</h1>
       </header>
       <div className="page">
+        <div className="tabs content-views" role="tablist" aria-label="Content views">
+          {(["all", "scheduled"] as const).map((v) => (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={view === v}
+              className={view === v ? "active" : ""}
+              onClick={() => setView(v)}
+            >
+              {v === "all" ? "All posts" : "Scheduled"}
+            </button>
+          ))}
+        </div>
+        {view === "scheduled" ? (
+          query.isPending ? (
+            <Loading />
+          ) : query.error ? (
+            <ErrorBox error={query.error} />
+          ) : (
+            <ScheduledView rows={query.data || []} />
+          )
+        ) : (
+        <>
         <div className="actions">
           <select
             aria-label="Filter project"
@@ -55,7 +84,7 @@ export function ContentPage() {
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="">All statuses</option>
-            {["draft", "approved", "published"].map((s) => (
+            {["draft", "approved", "scheduled", "publishing", "failed", "uncertain", "published"].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -98,12 +127,20 @@ export function ContentPage() {
                     <td>{r.projectName}</td>
                     <td>{r.post.platform === "x" ? "X" : "LinkedIn"}</td>
                     <td>
-                      <span className="chip">{r.post.status}</span>
+                      <span className="chip">
+                        {isOverdue(r.post)
+                          ? "overdue"
+                          : r.post.status === "uncertain"
+                            ? "may have posted"
+                            : r.post.status}
+                      </span>
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
+        )}
+        </>
         )}
       </div>
     </>

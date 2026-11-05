@@ -4,6 +4,7 @@ import { Check, Monitor, Moon, Plus, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { Path } from "../../components/Path";
+import { AccountsSettings } from "./Accounts";
 import { Button } from "../../components/ui/button";
 import {
   ErrorBox,
@@ -37,7 +38,11 @@ export function Theme() {
   return null;
 }
 export function AppSettings({ onAdd }: { onAdd: () => void }) {
-  const [section, setSection] = useState("Folders"),
+  const [section, setSection] = useState(
+      new URLSearchParams(location.search).get("section") === "accounts"
+        ? "Accounts"
+        : "Folders",
+    ),
     [mode, setMode] = useState<Appearance>(
       (localStorage.getItem("bip-appearance") as Appearance) || "dark",
     );
@@ -63,7 +68,14 @@ export function AppSettings({ onAdd }: { onAdd: () => void }) {
       </header>
       <div className="page app-settings">
         <nav className="settings-nav" aria-label="Settings sections">
-          {["Folders", "Agents", "Appearance", "Storage", "About"].map((t) => (
+          {[
+            "Folders",
+            "Agents",
+            "Accounts",
+            "Appearance",
+            "Storage",
+            "About",
+          ].map((t) => (
             <button
               key={t}
               className={section === t ? "active" : ""}
@@ -147,6 +159,8 @@ export function AppSettings({ onAdd }: { onAdd: () => void }) {
                 </section>
               ))}
             </>
+          ) : section === "Accounts" ? (
+            <AccountsSettings />
           ) : section === "Appearance" ? (
             <>
               <p className="muted">Choose how your workspace looks.</p>

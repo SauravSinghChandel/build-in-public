@@ -38,6 +38,7 @@ const Summary = z.strictObject({
 export class Content {
   readonly jobs: JobRunner;
   videoHandler?: Content["imageHandler"];
+  publishHandler?: Content["imageHandler"];
   imageHandler?: (
     job: JobView,
     signal: AbortSignal,
@@ -137,6 +138,10 @@ export class Content {
     signal: AbortSignal,
     emit: (type: string, data?: Record<string, unknown>) => void,
   ) {
+    if (job.type === "publish") {
+      if (!this.publishHandler) throw Error("Publishing unavailable");
+      return this.publishHandler(job, signal, emit);
+    }
     if (job.type.startsWith("video.")) {
       if (!this.videoHandler) throw Error("Video studio unavailable");
       return this.videoHandler(job, signal, emit);

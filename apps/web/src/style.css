@@ -1913,4 +1913,37 @@ textarea {
 }
 .caption-suggest p {
   margin: 0;
+
+/* M5: accounts, direct publishing, scheduling */
+.account-guide ol {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.account-row .field {
+  max-width: 420px;
+}
+.notice {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: var(--raised);
+}
+.direct-publish,
+.schedule-form {
+  display: grid;
+  gap: 10px;
+}
+.content-views {
+  margin-bottom: 16px;
+}
+.scheduled-view {
+  display: grid;
+  gap: 16px;
+}
+.scheduled-row {
+  flex-wrap: wrap;
+  gap: 12px;
 }
