@@ -7,19 +7,31 @@ import {
   Search,
   Settings as SettingsIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { api } from "./api";
 import { Button } from "./components/ui/button";
 import { Command } from "./components/ui/command";
 import { Dialog } from "./components/ui/dialog";
-import { message, useProjects, useRefresh } from "./components/workspace";
+import {
+  Loading,
+  message,
+  useProjects,
+  useRefresh,
+} from "./components/workspace";
 import { AddProjects } from "./features/projects/AddProjects";
 import { ProjectsPage } from "./features/projects/ProjectsPage";
 import { AppSettings, Theme } from "./features/settings/AppSettings";
-import { ContentPage } from "./features/studio/ContentPage";
 import { JobEvents, JobsIndicator } from "./features/studio/jobs";
-import { Workspace } from "./routes/Workspace";
+// Studios (stories, image, video) are large; load them with their routes.
+const Workspace = lazy(() =>
+  import("./routes/Workspace").then((m) => ({ default: m.Workspace })),
+);
+const ContentPage = lazy(() =>
+  import("./features/studio/ContentPage").then((m) => ({
+    default: m.ContentPage,
+  })),
+);
 export default function App() {
   const [collapsed, setCollapsed] = useState(false),
     [add, setAdd] = useState(false),
@@ -108,6 +120,13 @@ export default function App() {
           </Button>
         </aside>
         <main>
+          <Suspense
+            fallback={
+              <div className="page">
+                <Loading />
+              </div>
+            }
+          >
           {pathname === "/settings" ? (
             <AppSettings onAdd={() => setAdd(true)} />
           ) : pathname === "/content" ? (
@@ -117,6 +136,7 @@ export default function App() {
           ) : (
             <ProjectsPage onAdd={() => setAdd(true)} onRescan={rescan} />
           )}
+          </Suspense>
         </main>
       </div>
       <AddProjects open={add} onOpenChange={setAdd} />

@@ -60,7 +60,7 @@ export class Publisher {
     retryUncertain = false,
   ) {
     const s = await this.content.projects.store(projectId);
-    if (s.readOnly) throw Error("Project is read-only");
+    if (s.readOnly) throw Error("This project is read-only because another Build in Public process holds its lock. Close the other instance, then reload.");
     const post = await s.readPost(storyId, postId);
     if (post.status === "published") throw Error("This post is already published");
     if (post.status === "uncertain" && !retryUncertain) throw Error(CHECK_BEFORE_RETRY);
@@ -89,7 +89,7 @@ export class Publisher {
     const items = await this.assets.list(projectId);
     return post.media.map((m) => {
       const item = items.find((a) => a.sha === m.sha);
-      if (!item) throw Error("An attached media file is missing");
+      if (!item) throw Error("An attached image or video is missing from the project. Remove it from the post or attach it again.");
       return item.mime;
     });
   }

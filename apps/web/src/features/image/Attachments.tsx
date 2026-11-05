@@ -197,7 +197,7 @@ export function PublishImages({
                                 (b) =>
                                   b
                                     ? resolve(b)
-                                    : reject(Error("Could not copy image")),
+                                    : reject(Error("Couldn't copy the image. Use Download image instead.")),
                                 "image/png",
                               ),
                           );

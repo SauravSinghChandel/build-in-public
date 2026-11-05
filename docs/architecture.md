@@ -1,209 +1,187 @@
-# M1 architecture
+# Architecture
 
-The pnpm workspace contains the Hono server, React browser client, and shared Zod schemas/API types. TypeScript is strict throughout. Node 22 runs compiled JavaScript in production; `tsx watch` runs the development server because this host's Node lacks TypeScript stripping.
+BIP is one Node.js process that serves a React UI and a JSON API on 127.0.0.1. It stores per-project content as files inside each repository, keeps a small SQLite database for the registry and job queue, and runs external programs (Git, FFmpeg, Chromium via Playwright, HyperFrames, and the `claude`/`codex` CLIs) as child processes. There is no Docker, Redis or hosted backend.
 
-## Run and verify
+```
+┌──────────────────────── Browser (http://127.0.0.1:4310) ────────────────────────┐
+│ React 19 + Vite + Tailwind v4 · TanStack Router/Query · Radix · cmdk            │
+│ Projects · Overview · Stories · Media · Context · Image/Video Studio · Settings │
+└───────────────▲─────────────── REST + SSE (session cookie, Host/Origin checks) ─┘
+                │                          ▲ preview iframes (sandboxed)
+┌───────────────┴──────────── Server (Node 22, TypeScript, Hono) ─┼───────────────┐
+│ projects.ts / git.ts ── git CLI (execFile)                       │               │
+│ bip/store.ts ────────── <repo>/.bip/ files (atomic writes, lock)  │               │
+│ content.ts ──────────── stories, posts, revisions, approval      │               │
+│ jobs/runner.ts ──────── SQLite queue, 2 workers, SSE events      │               │
+│   ├─ agents/ ────────── claude -p │ codex exec (isolated workspaces)            │
+│   ├─ image/ ─────────── capture, compositions, render ── render origin ─────────┤
+│   ├─ video/ ─────────── CDP capture, compositions, HyperFrames + FFmpeg         │
+│   └─ publishing/ ────── X / LinkedIn APIs, scheduler, secrets (OS keychain)     │
+└──────┬───────────────────────────┬─────────────────────────────┬────────────────┘
+       │                           │                             │
+  <data>/app.db (SQLite, WAL)   <data>/workspaces, logs,     <repo>/.bip/  per project:
+  registry, jobs, agent_runs,   previews, backups,           context, stories, posts,
+  platform apps, accounts       secrets fallback             assets, compositions, renders
+```
 
-Use `npx --yes pnpm@10.34.9 install`, then `npx --yes pnpm@10.34.9 dev` or `npx --yes pnpm@10.34.9 start`. Start builds both applications and opens the token URL unless `BIP_NO_OPEN` is set. The development token URL redirects to Vite after installing the cookie. Both services use 127.0.0.1; Vite proxies `/api` to port 4310 (or `BIP_PORT`). `BIP_PORT` changes the server and development proxy port.
+`<data>` is `$BIP_HOME`, or `$XDG_DATA_HOME/build-in-public` (default `~/.local/share/build-in-public`).
 
-Run `typecheck`, `test`, and `test:e2e` with the same pnpm prefix. Use **`pnpm run doctor`** explicitly: pnpm itself also has a `doctor` command. The application CLI is `node apps/server/dist/cli.js start|doctor|backup` after building. Examples: `backup --all` and `backup --project <uuid>`.
+## Repository layout
 
-## Persistence
+```
+apps/server/            Hono API, CLI, job runner, adapters
+  migrations/           numbered SQL migrations for app.db
+  src/
+    cli.ts index.ts     `bip` CLI and server start-up
+    app.ts              routes, Host/Origin/session middleware
+    config.ts paths.ts  config file, XDG paths, path allowlist
+    db.ts               SQLite open + migrations
+    projects.ts git.ts  discovery, registry, relinking, git log parsing and caching
+    bip/store.ts        the .bip/ store
+    content.ts content-routes.ts   stories, posts, agent text tasks, approval, publish marking
+    agents/             CLI harness, context bundle, schema adaptation, activity labels
+    jobs/runner.ts      durable job queue
+    capture/            page element map for capture steps, friendly capture errors
+    image/              assets, Image Studio, render origin, validation
+    video/              CDP capture, timing model, HTML generation, HyperFrames/FFmpeg
+    publishing/         accounts/OAuth, X and LinkedIn clients, publisher + scheduler, secrets
+    doctor.ts backup.ts
+apps/web/               React UI (routes/, features/, components/)
+packages/shared/        Zod schemas and API types shared by server and web
+packages/templates/     image presets (minimal, launch, technical, comparison) and video styles (clean, technical)
+agent-skills/           BIP's instructions to agents: post-writer, image-composer, video-editor
+tests/                  Playwright e2e specs, fake agent CLI and fixtures, X/LinkedIn mock
+spikes/                 M0 proof-of-concept code and results (reference only)
+```
 
-`BIP_HOME` isolates all application data, including `config.json`, for tests or portable use. Otherwise data is under `$XDG_DATA_HOME/build-in-public` (default `~/.local/share/build-in-public`), and configuration is `$XDG_CONFIG_HOME/build-in-public/config.json` (default `~/.config/build-in-public/config.json`). Configuration currently stores the port; appearance is browser-local in `bip-appearance` as required by M1.
+TypeScript is strict everywhere. Production runs the compiled JavaScript in `apps/server/dist`; development uses `tsx watch`, because Ubuntu's Node 22 can't strip TypeScript types.
 
-SQLite contains the folder/project registry and the future job/agent-run tables. Migrations run in numbered order, transactionally with `PRAGMA user_version`. Existing databases are checkpointed and copied before upgrades; WAL and foreign keys are enabled. Display names are cached in the registry for missing-folder rows.
+## CLI
 
-`src/bip/store.ts` is ported from `spikes/storage/store.ts`, retaining its exclusive PID/reaper locks, per-resource async mutexes, Zod validation, same-directory atomic writes, fsync, revision recovery detection, content-addressed assets, and migration backups. Shared schemas live in `packages/shared`. M1 adds metadata updates and safe Markdown read/write. Project handles are retained for the server lifetime; concurrent readers reuse one opening promise. A second instance gets a read-only handle. Moving an open project releases its relocated lock only if inode/device identity still proves ownership.
+`apps/server/dist/cli.js` is the `bip` binary (after `pnpm build`):
 
-The spike's caveats still apply: PID reuse/malformed locks fail closed; directory fsync is not a power-loss guarantee; revisions and their pointer are not a multi-file transaction. Git worktrees share excludes, so context opt-in can affect another checkout's visibility. Opt-out does not untrack already committed files. Private notes are ignored, not encrypted. `git clean -fdx` and deleting/recloning a repository can destroy `.bip`; the UI explains this and provides backup.
+| Command | What it does |
+|---|---|
+| `bip start` (default) | Writes the default config if missing, rescans folders, starts the scheduler, serves the app and opens the session URL (unless `BIP_NO_OPEN` is set). |
+| `bip doctor` | Checks Node ≥ 22, git, ffmpeg, ffprobe, Playwright Chromium, HyperFrames 0.9.13 and its Chromium, the agents, a writable data directory, a free port, and Docker contexts of tracked repos. Exits 1 if a required check fails; agent checks are advisory. |
+| `bip backup --project <id>` / `--all` | Writes `.bip/` (without `renders/` and the lock) to `<data>/backups/<project-id>/<timestamp>-<id>.tar.gz` using system `tar`. |
+| `bip publish-due` | Runs one scheduler pass and exits; does nothing if the app is already running. See [scheduling.md](scheduling.md). |
 
-Backups use system `tar` with an argument array, writing `.tar.gz` files to `backups/<project-id>/`. Renders and the live lock are excluded. Backups do not stop another process from editing the store; they are manual snapshots, not a cross-file transaction or automatic recovery service.
+Root scripts: `pnpm start` (build + `bip start`), `pnpm dev` (API on 4310 and Vite on 5173), `pnpm run doctor`, `pnpm build`, `pnpm test`, `pnpm test:e2e`, `pnpm typecheck`.
 
-## Git and identity
+## Configuration
 
-Discovery is depth-limited, skips generated/hidden directories, supports `.git` files, and stops at a repository. Git commands use `execFile`, a 10-second timeout, and a bounded output buffer. Logs use record/field separators and numstat; merge stats compare the first parent, binary stats are zero. Commit data and pages are cached by canonical repository path and HEAD; branch/origin are refreshed independently because they can change at the same HEAD.
+`config.json` lives at `$XDG_CONFIG_HOME/build-in-public/config.json` (default `~/.config/build-in-public/config.json`), or at `$BIP_HOME/config.json` when `BIP_HOME` is set. Unknown keys are rejected.
 
-The shared marker stores its SHA and commit date. When the marker is no longer an ancestor (or has been pruned), counts use commits after its saved date and report `markerLost`. Without a recoverable or saved date, the conservative fallback is all commits. SHA/date fallback cannot establish exact ancestry after arbitrary history rewrites.
+| Key | Default | Meaning |
+|---|---|---|
+| `port` | `4310` | Server port (`BIP_PORT` overrides) |
+| `claudeBin`, `codexBin` | `claude`, `codex` | Agent binaries (`BIP_CLAUDE_BIN`, `BIP_CODEX_BIN` override) |
+| `chromiumPath` | Playwright's Chromium | Browser used by HyperFrames (`HYPERFRAMES_BROWSER_PATH` overrides) |
+| `videoConfigHome` | `<data>/hyperframes-config` | Writable config directory passed to HyperFrames |
 
-Startup, manual rescans and debounced window focus scan saved folders. Missing paths are retained. Matching `.bip` IDs, or root commit plus origin, relink missing entries; manual Locate validates the same identity. Repositories without an origin can match by root commit with a null origin. Existing conflicting `.bip` IDs are rejected.
+Other environment variables: `BIP_HOME`, `BIP_NO_OPEN`, `BIP_SECRET_STORE=keychain|file`, `BIP_CAPTURE_GPU=0` (force software rendering for capture), `BIP_X_API_BASE`, `BIP_X_AUTH_BASE`, `BIP_LINKEDIN_API_BASE`, `BIP_LINKEDIN_AUTH_BASE`, `BIP_LINKEDIN_VERSION` (default `202510`). Development and test only: `BIP_DEV_NO_AUTH` (with `NODE_ENV=development`), `BIP_TEST_CLOCK_OFFSET_MS`, `BIP_SCHEDULER_INTERVAL_MS`, `BIP_PUBLISH_BACKOFF_MS`, `BIP_X_CHUNK_BYTES`, `BIP_FAKE_MODE` (fake agent). UI appearance is stored in the browser (`bip-appearance`).
 
-## Security boundary
+## Data layout
 
-The server binds only 127.0.0.1, validates Host on every request, validates Origin on mutations, and authenticates all API endpoints with an HttpOnly SameSite=Strict session cookie. A fresh 32-byte token is printed at startup; the token exchange redirects to remove it from the visible URL and responses set `Referrer-Policy: no-referrer`. Development additionally accepts the Vite Origin. `BIP_DEV_NO_AUTH=1` works only with `NODE_ENV=development`.
+### Per project: `<repo>/.bip/`
 
-Autocomplete is restricted to HOME. Explicitly selected absolute folders are canonicalized and persisted as allowed scan roots, including folders outside HOME. Canonical tracked repositories are additional read roots; only their `.bip` stores are written. Traversal and symlink escapes are rejected; store paths independently reject symlinks. This does not claim protection against a hostile process racing filesystem path replacement. Agent detection invokes versions and the documented local `codex login status`; Claude authentication remains unknown. M1 never invokes an agent model.
+```
+<repo>/.bip/
+├── project.json            id, name, root commit, last shared commit + date, settings
+├── context.md              shareable notes (the only file that can be committed, opt-in)
+├── private.md              "never mention" notes, never committed
+├── auto-summary.md         agent summary, tagged with the HEAD it describes
+├── .gitignore              `*`, `!.gitignore`, `!context.md`
+├── .lock                   PID lock: one writer per project
+├── stories/<story-id>/
+│   ├── story.json          title, brief, angle, status, selected commits / range
+│   └── posts/<post-id>/
+│       ├── post.json       platform, kind, status, current/approved revision, media, schedule, external ids, URL
+│       └── revisions.jsonl append-only revision history
+├── assets/<sha256>         content-addressed bytes (screenshots, recordings, uploads, exports)
+├── assets/index.json       sha → kind, MIME type, size, provenance
+├── compositions/<id>/      one internal Git repository per image or video (revision = commit)
+├── renders/<id>/           <commit>[-<size>].png|jpg, <commit>-<variant>.mp4
+└── .backup/                copies made before a schema migration
+```
 
-## Client
+On first write BIP appends `.bip/` to `.git/info/exclude` (found with `git rev-parse --git-common-dir`, so worktrees work). The `.gitignore` inside `.bip/` keeps private files ignored even if another worktree removes that shared exclude line. Opting a project into "commit context" removes the exclude line so only `context.md` can be committed. Worktrees share `info/exclude`, so this opt-in applies to the whole repository.
 
-TanStack Router owns page navigation; TanStack Query owns API caching. Owned shadcn-style components use Radix for dialogs, menus, switches and tooltips, plus cmdk for command search. The graphite/amber CSS tokens implement `docs/design.md`, with self-hosted IBM Plex, light/dark/system modes and reduced-motion handling. The timeline supports paging, expanded file lists, shift selection and shared markers. M2 enables story creation from commit selection. Context writes are serialized after 800 ms idle, flushed when leaving the tab, and reflected in the query cache.
+`git clean -fdx`, deleting the repository or re-cloning it removes `.bip/`. The UI warns about this, and `bip backup` / "Back up now" make snapshots.
 
-All tests create disposable repositories under the OS temporary directory. The single Playwright core-loop test launches the compiled production server with a temporary HOME/BIP_HOME, exchanges the real token, and cleans up its process and fixtures. It never scans or modifies the user's project folders.
+### App data: `<data>/`
 
-## M2 Post Studio
+```
+<data>/
+├── app.db                  SQLite (WAL): tracked_dirs, projects, jobs, agent_runs, platform_apps, accounts
+├── config.json             only when BIP_HOME is set
+├── workspaces/<job-id>/    agent working directories
+├── logs/agents/<run>.jsonl raw agent output
+├── previews/               immutable composition snapshots served by the render origin
+├── hyperframes-config/     HyperFrames' writable config directory
+├── backups/<project-id>/   .tar.gz snapshots of .bip/
+└── secrets.enc, secrets.key  only when the OS keychain is unavailable
+```
 
-`agents/` ports M0's process harness with fresh per-job working directories, closed stdin,
-read-only tools/sandbox, environment/config binary selection, JSONL normalization, persisted
-session IDs, costs and raw logs. Writing tasks receive a redacted context bundle only;
-summary tasks additionally receive the repository through `--add-dir`. No repository is a CLI cwd.
+Thumbnails are cached in `$XDG_CACHE_HOME/build-in-public/thumbs` (default `~/.cache/build-in-public/thumbs`) and are safe to delete.
 
-`jobs/runner.ts` uses SQLite as the durable queue and runs at most two jobs, excluding
-concurrent resource keys. Startup changes running jobs to interrupted. Resume reuses the
-last stored session for that job; independent edit actions always start new sessions.
-Cookie-authenticated SSE carries a bounded 300-event replay ring. On reconnect the client
-also refreshes persisted jobs, including after a server restart resets the event sequence.
-Shutdown closes SSE sockets before waiting for agent cancellation and store cleanup.
+### Store guarantees
 
-Content stays in the M1 store. Revisions include claims/highlights. Manual edit snapshots
-append to JSONL; snapshots within 60 seconds fold into one logical timeline revision,
-with a fresh revision ID and an explicit coalescing pointer. Restore always appends.
-Approval checks the current revision and rejects secret matches, unchecked claims, or
-unacknowledged private-term warnings. Changes invalidate approval. Publish recording
-requires approval and a matching HTTPS platform URL. The first published post of a story
-advances its marker only under an atomic store lock and a successful ancestor check.
+`bip/store.ts` validates every file with Zod on read, writes atomically (temp file in the same directory, fsync, rename), and serialises writes per resource with async mutexes. A `.lock` file with the owner's PID allows one writer per project; a second BIP instance gets a read-only view. Each JSON file has a `schemaVersion` and is migrated on read after a copy goes to `.bip/.backup/`. `app.db` uses numbered SQL migrations with `PRAGMA user_version`, run in a transaction after the database is checkpointed and copied.
 
-The browser has routed project tabs and feature modules, an angle sheet, a two-platform
-editor, a revision diff preview, and an assisted publish sheet. It only copies text and
-opens platform URLs; it contains no social-platform posting integration. Regex secret
-scanning is best-effort and cannot establish factual accuracy or absence of secrets.
+Limits: a reused PID or malformed lock fails closed (read-only); directory fsync is not a power-loss guarantee; a revision and the post's pointer to it are separate writes, not a transaction; backups are snapshots, not a transaction.
 
+## Projects and Git
 
-## M3 Image Studio
+Discovery walks the folders you add, to a configurable depth (default 2), skipping generated and hidden directories, and stops at each repository. A folder counts as a repository only if `git rev-parse --show-toplevel` (with `GIT_CEILING_DIRECTORIES`) returns that folder; broken ones are listed as invalid with a fix hint and can't be tracked. Git runs with `execFile`, a 10-second timeout and bounded output; logs are parsed from record/field-separated output with numstat. Results are cached by repository path and HEAD; the projects list is served from memory first (`?cached=1`) and refreshed in the background.
 
-`image/` ports the M0 capture, render-origin, overflow and fidelity code. Assets retain M1's canonical SHA-only filenames and add a validated `assets/index.json`; image signatures, decoding, dimensions and a 20 MiB upload limit are checked. API media responses use their actual MIME type, immutable caching and nosniff. Asset and composition thumbnails are generated by Chromium into the XDG cache.
+"Since last post" is `git log <lastSharedCommit>..HEAD`. If the marker is no longer an ancestor (history rewritten or pruned), counts fall back to commits after the saved marker date and the UI reports the marker as lost. The first published post of a story advances the marker, under the store lock and only if the new commit descends from the old one.
 
-Each image composition is an internal Git repository. Local commit flags supply the BIP author, disable signing and hooks, and leave global Git settings alone. Slot writes are debounced by the client; restore appends a new commit. Immutable revision snapshots are served through random capability URLs on a separate 127.0.0.1 listener. The preview iframe permits scripts without same-origin access and uses a credentialless context. Session cookies are scoped to `/api`; the old root-scoped cookie is cleared on token exchange. The render listener never authenticates with cookies or sets them.
+Moved repositories are relinked on rescan by `.bip/project.json` id, then by root commit plus origin URL. Missing paths keep their registry row with status `missing`.
 
-The four bundled presets derive from the spike's responsive launch layout and use local IBM Plex WOFF2 fonts (SIL OFL included beside the presets). BIP injects the trusted slot loader; agent files cannot contain scripts, external resources, event handlers or embedded documents. The renderer blocks requests outside its own origin and checks canvas overflow.
+## Job runner
 
-Agent edits run in fresh app-data workspaces, with read-only source copies and no user-repository cwd. Allowed files and sizes, protected metadata, original/copy hashes, CSS source styles, text overlap and pixel fidelity are checked before copy-back and commit. Failed edits preserve the previous revision. The calibrated pixel limit remains 3%; the reference now uses a clean Chromium image at the identical fractional box, avoiding the spike's canvas-vs-CSS resampling error on fine UI detail. The explicit screenshot-edit override bypasses visual checks, never source hashes or overflow checks.
+Long work runs as jobs (`jobs/runner.ts`), stored in the `jobs` table: agent tasks (`story.angles`, `post.draft`, `post.edit`, `project.summary`, `image.steps`, `image.alt`, `image.edit`, `video.steps`, `video.captions`, `video.edit`), capture (`image.capture`, `video.capture`), rendering (`video.contact`, `video.preview`, `video.final`) and `publish`.
 
-Capture jobs use fresh Chromium contexts without application cookies. Agent step generation returns JSON for review; the UI requires explicit approval before running generated steps. Export checks fidelity again, downloads DPR-2 PNG or quality-90 JPEG, and retains the render as an asset. Posts store image SHA/alt pairs, clear approval on attachment changes, and expose download/copy actions in the publish sheet. All automated agent runs use the fake CLI; live Claude/Codex behavior remains a reviewer smoke test.
+- At most two jobs run at once, first in first out, and never two with the same resource key (for example one post or one composition).
+- Progress, text and tool activity go to the browser over Server-Sent Events (`/api/events`) with a 300-event replay buffer. On reconnect the client also refetches the persisted jobs.
+- Cancel aborts the job; agent processes get SIGINT, then SIGTERM, then SIGKILL.
+- On start-up, jobs left `running` become `interrupted`. Resume reuses the stored agent session id for that job; new edits always start a fresh session.
+- Shutdown closes SSE connections, waits for cancellations and releases store locks.
 
-## M4 Video Studio
+## Agents
 
-HyperFrames is an exact workspace dependency at **0.9.13**. BIP compositions use
-its deterministic CSS/WAAPI adapters and `data-no-timeline`; there is no authored
-GSAP dependency. The video validator rejects GSAP/`__timelines`, external URLs,
-unsafe resources, symlinks, oversized files and undeclared files before running
-HyperFrames `lint --json` against a disposable project with verified source copies.
-The BIP video-editor skill overrides HyperFrames's GSAP advice and is supplied
-as the final skill content in edit prompts. Render staging also injects a trusted
-CSP restricting resource requests to the render origin and disabling connections,
-forms, frames and base URLs. Agents never execute the renderer or use a user repo
-as their working directory.
+Agents run as child processes in fresh workspaces under `<data>/workspaces/`, never inside a repository, with read-only tools unless the task edits a composition copy. Writing tasks get a redacted context bundle instead of repository access. See [agents.md](agents.md) for the flags, the context bundle and the provider interface.
 
-`video/` owns CDP capture, timing models, authoring, lint/snapshot/render orchestration
-and authenticated routes under `/api/projects/:id/video`. CDP JPEG frames and
-injected pointer/click/scroll/navigation events share the browser's epoch clock;
-action starts and completions are measured too. FFmpeg assembles the delivered
-frames with their durations into H.264 CFR 30. Effective delivered fps and maximum
-frame gap include recording boundaries; <12 fps or >500 ms is advisory “Choppy”.
-No frame interpolation is claimed. Capture waits for network idle and fonts,
-hides native/site cursor overlays and runs only explicitly approved steps in a
-fresh context. Imports accept MP4/MOV/WebM up to 500 MiB, probe the container and
-video stream, and store FFmpeg scene changes at threshold 0.3 instead of an event log.
+## Posts
 
-Recordings, event/scene JSON, contact sheets and video exports use the existing
-content-addressed asset bytes. Metadata can retain several provenance records for
-the same SHA (for example, identical renders at different commits or an imported
-render); old SHA-keyed indexes remain readable. Media pickers deduplicate by SHA.
-Video responses support byte ranges. Events/scenes link from recording provenance.
+Revisions are appended to `revisions.jsonl` and include the agent's highlights and "claims to verify". Manual edits within 60 seconds fold into one visible revision; restore appends a new revision. Approval binds to the current revision and is refused while secret matches, unchecked claims or unacknowledged private-term warnings remain. Any change clears approval. Assisted publishing copies text, offers media downloads and opens X's intent URL or LinkedIn's share URL; recording a published URL requires an approved post and a matching HTTPS URL for the platform.
 
-Video compositions remain internal Git repositories alongside image compositions;
-listing filters by type. Four editable files are admitted: composition.json,
-index.html, styles.css and optional motion.js. The JSON scene/caption model generates
-HTML when slots change; a content hash distinguishes canonical from custom markup.
-Caption edits patch custom slots in place; agents must update custom HTML with
-metadata changes. BIP refuses to overwrite a custom layout. HTML/CSS changes are retained across renders and restores. Original source hashes and protected identity/source metadata gate agent
-copy-back. Source copies are read-only, Codex receives the contact sheet with `-i`,
-and Claude is prompted to Read the image. Each revision exposes git diff statistics;
-small instructions affecting >3 files or >200 added/deleted lines are flagged.
+## Image Studio and the render origin
 
-Clean uses title/outro cards, two captions, a synthetic cursor/ripple, measured click
-zooms (.4 s pre-roll, .35 s hold, .65 s return), both-axis centring with edge clamping,
-and a 2× ramp on the longest measured scroll segment. Technical adds a terminal
-card and an annotated still derived from the source. Image sources use slow pan/zoom, per-still captions
-and fades. Imported audio is retained through HyperFrames media-audio clips. Responsive layout preserves footage aspect ratio at all export sizes.
+- Screenshots come from uploads (PNG, JPEG or WebP up to 20 MiB) or from capture: a fresh Chromium context without BIP cookies loads the URL, runs approved steps (click, type, scroll, hover, wait, press, pause, scrollTo) and takes a viewport, full-page or element screenshot. Agent-written steps use only selectors from an element map extracted from the live page, and each step is dry-run before you approve it.
+- A composition is a directory (`composition.json` with canvas size, preset and slots, plus `index.html` and `styles.css`) copied from a preset in `packages/templates/image/`, kept as an internal Git repository. Slot edits and agent edits are commits; restore adds a commit. Commits use a fixed BIP author and disable hooks and signing without touching your Git config.
+- Revision snapshots are copied to `<data>/previews/` and served by the **render origin**: a separate HTTP listener on a random 127.0.0.1 port, addressed by random capability paths, with its own CSP and no cookies. The UI previews them in a sandboxed, credentialless iframe. Rendering uses Playwright at device scale factor 2 with all requests outside the render origin blocked, then checks canvas overflow and screenshot fidelity.
+- Export produces PNG or quality-90 JPEG, stores it as an asset and keeps the render under `renders/`.
 
-Each revision queues separate contact-sheet and preview jobs through M2's durable
-queue. HyperFrames `snapshot` samples twelve times; FFmpeg tiles the PNGs. Preview
-is 960×540/30/CRF 30. Final variants are 1920×1080, 1080 square and 1080×1920 at
-30 fps/CRF 20, H.264 + AAC, faststart; silence is added only when needed. Outputs
-are cached by composition, commit and variant, with decoded frame 150 hashed for
-repeat comparisons (the final available frame for videos shorter than 151 frames).
-The hash and actual frame index are retained in render provenance; forced repeat
-mismatches emit warnings. Videos above 140 seconds show X's duration warning.
+## Video Studio
 
-Set `chromiumPath` and `videoConfigHome` in BIP config to override the cached
-Chromium and writable HyperFrames config directory. `HYPERFRAMES_BROWSER_PATH`
-is also respected; otherwise BIP checks Playwright's executable then the browser
-cache. HyperFrames receives that path and a writable XDG_CONFIG_HOME explicitly.
-Doctor checks the pinned CLI, cached Chromium, FFmpeg and ffprobe. In this sandbox,
-run tests with `XDG_CONFIG_HOME=/tmp/bip-m4/config` (create it first); Chromium's
-crash handler otherwise encounters the read-only desktop config directory.
+- **Capture:** Chromium's DevTools screencast records JPEG frames while BIP injects pointer, click, scroll and navigation listeners on the same clock, and measures when each action starts and finishes. FFmpeg assembles the frames into H.264 at 30 fps. Capture waits for network idle and fonts, hides cursors, and runs only approved steps. If the effective frame rate is below 12 fps or a frame gap exceeds 500 ms, the recording is flagged "Choppy". When a hardware WebGL renderer is available, capture uses `--use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization`; `BIP_CAPTURE_GPU=0` forces Chromium's defaults.
+- **Import:** MP4, MOV or WebM up to 500 MiB, probed with `ffprobe`; FFmpeg scene detection (threshold 0.3) stands in for the event log.
+- **Compose:** a composition has `composition.json` (scenes, captions, style), generated `index.html`, `styles.css` and an optional `motion.js`, in an internal Git repository. The Clean and Technical styles use CSS and Web Animations only (no GSAP): title and outro cards, captions, a synthetic cursor with click ripples, zooms timed from measured clicks, and a 2× speed-up on the longest scroll. Bundled IBM Plex fonts are staged next to every render.
+- **Check and render:** HyperFrames 0.9.13 runs `lint --json`, `snapshot` (12 frames, tiled into a contact sheet with FFmpeg) and `render`. Each revision queues a contact sheet and a 960×540 preview; final renders are 1920×1080, 1080×1080 or 1080×1920 at 30 fps, H.264 + AAC with faststart. Renders are cached by composition, commit and variant. HyperFrames always runs with `HYPERFRAMES_NO_TELEMETRY=1`, its browser path, and a writable `XDG_CONFIG_HOME`.
+- Agents receive the contact sheet so they can see the frames; small instructions that change more than 3 files or 200 lines are flagged.
 
-The story action launches capture/import/image selection into a full-screen editor.
-The timeline is read-only; scene/caption/click markers seek the frame scrubber.
-Caption edits create direct revisions. Final render attachments invalidate post
-approval and appear as video chips with downloads in the assisted publish sheet.
-Automated agent edits use only fixture CLIs; real Claude/Codex smoke is a reviewer step.
+## Publishing and scheduling
 
-## M5 Accounts, direct publishing and scheduling
+Direct publishing is optional; without connected accounts the assisted flow is the only one.
 
-Direct publishing is optional; with no accounts the M2 assisted flow is unchanged.
+- **Accounts:** you register your own X and LinkedIn developer apps with the redirect URI `http://127.0.0.1:<port>/oauth/<platform>/callback`. X uses OAuth 2.0 with PKCE and scopes `tweet.read tweet.write users.read media.write offline.access`; LinkedIn uses the authorization code flow with `openid profile w_member_social` and needs a client secret. One account per platform. LinkedIn tokens last about 60 days; the UI warns 7 days before expiry.
+- **Secrets:** OS keychain via `@napi-rs/keyring`, or an encrypted fallback file (see [security.md](security.md)). SQLite stores metadata only.
+- **Publish jobs** (resource key `post:<id>`) upload media first, then create the post or each thread part (X threads reply to the previous part). Approval is re-checked at the start and before every create call. Returned ids are saved immediately so retries continue where they stopped. Rate limits (429) wait for the reset header with backoff; uploads and status polls also retry 5xx, timeouts and network errors (up to 3 retries). Create-post calls are not retried automatically after an ambiguous failure; the post is marked "May have posted".
+- **Scheduling:** an in-process scheduler checks every 30 seconds and enqueues due posts up to 2 minutes late; later ones are shown as Overdue. `bip publish-due` does one pass for use from a systemd timer. See [scheduling.md](scheduling.md).
 
-**Accounts setup.** Settings → Accounts shows, per platform, a short guide, the exact
-redirect URI to register (`http://127.0.0.1:<port>/oauth/<platform>/callback`) and the
-scopes. X: create an app in the X developer portal, enable OAuth 2.0 with read and write,
-scopes `tweet.read tweet.write users.read media.write offline.access`; a client secret is
-only needed for confidential clients. X bills per request (see X's pricing page).
-LinkedIn: create an app, add "Sign In with LinkedIn using OpenID Connect" and "Share on
-LinkedIn", scopes `openid profile w_member_social`; the client secret is required.
-LinkedIn tokens last ~60 days; the UI shows "Reconnect by <date>" and warns 7 days ahead.
+## Tests
 
-**OAuth.** X uses Authorization Code + PKCE (S256); LinkedIn uses Authorization Code.
-`state` is 32 random bytes, kept in memory, single-use, expires after 10 minutes and is
-bound to the starting browser by an HttpOnly `SameSite=Lax` cookie scoped to
-`/oauth/<platform>`. `/oauth/:platform/callback` is the only unauthenticated route; the
-global Host check still applies. Callback errors redirect to Settings with a message.
-
-**Secrets.** `publishing/secrets.ts` defines a small `SecretStore`. The OS keychain
-(`@napi-rs/keyring`, service `build-in-public`, account `<platform>:<accountId>:<kind>`;
-the app client secret uses `<platform>:app:client_secret`) is used when a probe
-round-trip works; otherwise an AES-256-GCM file `<appdata>/secrets.enc` with a 0600 key
-file `<appdata>/secrets.key`, and Settings warns that this protects only against casual
-reads. `BIP_SECRET_STORE=file|keychain` forces a backend. The store is chosen lazily;
-`GET /api/accounts?metadata=1` (used by the publish sheet) never touches it. SQLite
-`platform_apps`/`accounts` hold only client ids, handles, scopes, expiry and
-`keychain_ref`. Platform error text passes through a scrubber that removes live token
-values and bearer/token patterns before it reaches job errors, post errors or responses.
-Disconnect revokes (both platforms support it), deletes secrets and the row.
-
-**Publishing.** `publish` jobs (`resource_key post:<id>`) run on the M2 runner. The job
-requires `approvedRevisionId === currentRevisionId === payload.revisionId` at start and
-again right before every create-post call. Media upload first (X: simple upload for
-images plus alt text, chunked initialize/append/finalize with STATUS polling for video;
-LinkedIn: Images/Videos API with multipart PUT and finalize), then posts (X threads reply
-to the previous part; LinkedIn Posts API with `LinkedIn-Version` and
-`X-Restli-Protocol-Version: 2.0.0`). Every returned id is persisted to `externalIds`
-before anything else; parts that have ids are never re-sent, so Retry continues a thread
-and a crash after success can't double-post. 429 waits for `x-rate-limit-reset` or
-`Retry-After` with exponential backoff (waits over 5 minutes fail with "try again after");
-uploads and status polls also retry 5xx, timeouts (60 s) and network errors; max 3
-retries. Create-post calls (X post, LinkedIn post) are **never** retried after a 5xx,
-timeout or network error: the post (or thread part) gets status `uncertain` ("May have
-posted", "Check your profile before retrying"). The user either pastes the live link
-("It posted": recorded like an API success; threads continue from the next part) or
-chooses "Retry anyway" (confirm; `retryUncertain`), which sends exactly one more create.
-Plain job Resume, Post now and the scheduler refuse uncertain posts. LinkedIn videos are
-polled (`GET /rest/videos/{urn}`) until AVAILABLE (fails on PROCESSING_FAILED or after
-~5 minutes) before the post is created. 401 → reconnect, 403 → missing permission. Success sets
-`published`, `publishedUrl`, `publishedAt` and applies the M2 marker rule. Base URLs are
-configurable (`BIP_X_API_BASE`, `BIP_X_AUTH_BASE`, `BIP_LINKEDIN_API_BASE`,
-`BIP_LINKEDIN_AUTH_BASE`, `BIP_LINKEDIN_VERSION`); tests use `tests/mocks/platforms.ts`.
-
-**Scheduling.** See `docs/scheduling.md`. The in-process scheduler (30 s,
-`BIP_SCHEDULER_INTERVAL_MS`) enqueues posts at most 2 minutes late; later ones are
-Overdue and wait for the user. It also releases posts left in `publishing` by a stopped
-job. `BIP_TEST_CLOCK_OFFSET_MS` shifts the server clock for end-to-end tests only.
+Unit and integration tests (Vitest, `apps/**/*.test.ts`) use disposable repositories in the OS temp directory. End-to-end tests (Playwright, `tests/e2e/`) start the compiled server with a temporary `HOME` and `BIP_HOME`, use the fake agent CLI in `tests/fixtures/agents/` and the X/LinkedIn mock in `tests/mocks/platforms.ts`, and never touch your own projects. See [CONTRIBUTING.md](../CONTRIBUTING.md).

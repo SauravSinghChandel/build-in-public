@@ -65,8 +65,19 @@ export function AgentPicker({
   });
   useEffect(() => {
     const last = p.settings.lastAgent?.[task];
+    let preferred: string | null = null;
+    try {
+      // Chosen during first-run onboarding.
+      preferred = localStorage.getItem("bip-default-agent");
+    } catch {}
+    const preferredUsable = agents.data?.find(
+      (a) => a.id === preferred && a.usable,
+    );
     if (last) onChange(last);
-    else if (
+    else if (preferredUsable) {
+      if (value !== preferredUsable.id)
+        onChange(preferredUsable.id as "claude" | "codex");
+    } else if (
       agents.data?.length &&
       !agents.data.find((a) => a.id === value)?.usable
     ) {

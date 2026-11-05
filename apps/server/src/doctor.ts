@@ -3,11 +3,31 @@ import { promisify } from "node:util";
 import fs from "node:fs/promises";
 import path from "node:path";
 import net from "node:net";
+import { createRequire } from "node:module";
 import { chromium } from "playwright";
-import type { AgentStatus, Check, DoctorReport } from "@bip/shared";
+import type { AgentStatus, Check, DoctorReport, Versions } from "@bip/shared";
 import { browserPath, hyperframes } from "./video/process.js";
 import { binaryFor } from "./config.js";
 const exec = promisify(execFile);
+const require = createRequire(import.meta.url);
+function packageVersion(name: string) {
+  try {
+    return (require(`${name}/package.json`) as { version: string }).version;
+  } catch {
+    return undefined;
+  }
+}
+/** Versions of BIP and the tools it drives, for doctor output and Settings → About. */
+export async function versions(found?: AgentStatus[]): Promise<Versions> {
+  const list = found ?? (await agents());
+  return {
+    bip: (require("../package.json") as { version: string }).version,
+    hyperframes: packageVersion("hyperframes"),
+    playwright: packageVersion("playwright"),
+    claude: list.find((a) => a.id === "claude")?.version,
+    codex: list.find((a) => a.id === "codex")?.version,
+  };
+}
 export async function agents(): Promise<AgentStatus[]> {
   return Promise.all(
     ["claude", "codex"].map(async (id) => {
@@ -57,6 +77,7 @@ export async function doctor(
   port: number,
   running = false,
   repos: string[] = [],
+  options: { ci?: boolean } = {},
 ): Promise<DoctorReport> {
   const checks: Check[] = [
     {
@@ -83,7 +104,7 @@ export async function doctor(
       .then(() => true)
       .catch(() => false),
     hard: true,
-    hint: "Run pnpm exec playwright install chromium",
+    hint: "Run npx playwright install chromium",
   });
   checks.push({
     name: "HyperFrames 0.9.13",
@@ -102,7 +123,9 @@ export async function doctor(
     hard: true,
     hint: "Set chromiumPath in BIP config or install Playwright Chromium",
   });
-  for (const a of await agents())
+  // CI runners have no signed-in agents; --ci skips those checks.
+  const found = options.ci ? [] : await agents();
+  for (const a of found)
     checks.push({
       name: `${a.id}${a.version ? ": " + a.version : ""} (${a.auth})`,
       ok: a.installed && a.auth !== "not signed in",
@@ -135,7 +158,7 @@ export async function doctor(
     name: running ? `Port ${port} (this server)` : `Port ${port} free`,
     ok: free,
     hard: true,
-    hint: "Stop the other process or set BIP_PORT",
+    hint: "Stop the other process, or choose another port with --port <n> or BIP_PORT",
   });
   for (const repo of repos) {
     if (
@@ -162,5 +185,10 @@ export async function doctor(
     for (const f of await fs.readdir(path.join(home, "backups", id)))
       backups.push(path.join(home, "backups", id, f));
   }
-  return { checks, dataPath: home, backups: backups.sort().reverse() };
+  return {
+    checks,
+    dataPath: home,
+    backups: backups.sort().reverse(),
+    versions: await versions(options.ci ? [] : found),
+  };
 }

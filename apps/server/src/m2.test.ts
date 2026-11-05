@@ -224,6 +224,37 @@ describe("job runner", () => {
     release.get("c")!();
     await waitUntil(() => runner.list().every((j) => j.status === "succeeded"));
   });
+  it("runs agent work in its own lane so it never waits behind queued renders", async () => {
+    const db = openDatabase(root);
+    cleanup.push(() => {
+      db.close();
+    });
+    db.prepare(
+      "INSERT INTO projects(id,path,root_commit,added_at) VALUES('p','/test','sha','now')",
+    ).run();
+    const started: string[] = [],
+      release = new Map<string, () => void>();
+    const runner = new JobRunner(db, async (job) => {
+      started.push(job.payload.name);
+      await new Promise<void>((resolve) => release.set(job.payload.name, resolve));
+      return job.payload.name;
+    });
+    cleanup.push(() => runner.close());
+    for (const n of ["r1", "r2", "r3"])
+      runner.enqueue("video.preview", "p", `render:${n}`, { name: n });
+    runner.enqueue("video.captions", "p", "comp", { name: "agent" });
+    await waitUntil(() => started.length === 2);
+    // One render at a time; the agent job starts immediately in the work lane.
+    expect(started).toEqual(["r1", "agent"]);
+    release.get("agent")!();
+    release.get("r1")!();
+    await waitUntil(() => started.includes("r2"));
+    expect(started).not.toContain("r3");
+    release.get("r2")!();
+    await waitUntil(() => started.includes("r3"));
+    release.get("r3")!();
+    await waitUntil(() => runner.list().every((j) => j.status === "succeeded"));
+  });
   it("marks running jobs interrupted on startup", () => {
     const db = openDatabase(root);
     cleanup.push(() => {

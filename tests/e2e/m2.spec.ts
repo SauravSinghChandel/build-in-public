@@ -1,13 +1,41 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
+import { createRequire } from "node:module";
+const require = createRequire(path.resolve("apps/server/package.json"));
 const exec = promisify(execFile),
   port = 14311,
   origin = `http://127.0.0.1:${port}`;
 let root: string, repo: string, server: ChildProcess, tokenUrl: string;
+// Resume needs the agent session id to be persisted before the server dies.
+async function sessionPersisted(page: Page, type: string) {
+  const Database = require("better-sqlite3");
+  await expect
+    .poll(async () => {
+      const jobs = await (await page.request.get(origin + "/api/jobs")).json();
+      const job = (jobs as any[]).find(
+        (j) => j.type === type && j.status === "running",
+      );
+      if (!job) return false;
+      const db = new Database(path.join(root, "data", "app.db"), {
+        readonly: true,
+        fileMustExist: true,
+      });
+      try {
+        return !!db
+          .prepare(
+            "SELECT 1 FROM agent_runs WHERE job_id=? AND session_id IS NOT NULL",
+          )
+          .get(job.id);
+      } finally {
+        db.close();
+      }
+    })
+    .toBe(true);
+}
 async function start(mode = "success") {
   server = spawn(process.execPath, ["apps/server/dist/cli.js", "start"], {
     cwd: process.cwd(),
@@ -175,8 +203,7 @@ test("post studio, assisted publishing and interrupted job resume", async ({
       )?.status;
     })
     .toBe("running");
-  // Wait for persisted session via progress text (no text is emitted until resumed).
-  await page.waitForTimeout(350);
+  await sessionPersisted(page, "post.edit");
   const editorUrl = page.url();
   await stop("SIGKILL");
   await start("slow");
@@ -202,7 +229,7 @@ test("post studio, assisted publishing and interrupted job resume", async ({
   await expect(page.locator(".story-editor .job-feedback")).toContainText(
     "Running",
   );
-  await page.waitForTimeout(350);
+  await sessionPersisted(page, "post.draft");
   const freshDraftUrl = page.url();
   await stop("SIGKILL");
   await start("slow");

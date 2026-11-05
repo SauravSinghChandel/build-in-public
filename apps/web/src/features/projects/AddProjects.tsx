@@ -15,9 +15,14 @@ import {
 export function AddProjects({
   open,
   onOpenChange,
+  initialMode = "folder",
+  onStage,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  initialMode?: "folder" | "single";
+  /** Reports when the dialog moves to picking repositories. */
+  onStage?: (stage: "folder" | "repos") => void;
 }) {
   const [path, setPath] = useState(""),
     [depth, setDepth] = useState(2),
@@ -34,11 +39,15 @@ export function AddProjects({
   });
   useEffect(() => {
     if (open) {
+      setMode(initialMode);
       setRepos(null);
       setError(null);
       setSelected(new Set());
     }
   }, [open]);
+  useEffect(() => {
+    if (open) onStage?.(repos ? "repos" : "folder");
+  }, [open, repos]);
   async function scan(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -49,7 +58,9 @@ export function AddProjects({
         depth: mode === "single" ? 1 : depth,
       });
       if (mode === "single" && !result.some((r) => r.path === path))
-        throw Error("Choose a repository root");
+        throw Error(
+          `${path} isn't the top folder of a Git repository. Choose the folder that contains .git.`,
+        );
       setRepos(
         mode === "single" ? result.filter((r) => r.path === path) : result,
       );

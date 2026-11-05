@@ -11,9 +11,14 @@
     "test": "vitest run",
     "test:e2e": "pnpm build && playwright test",
     "typecheck": "pnpm --filter @bip/shared build && pnpm -r typecheck && tsc -p tests/tsconfig.json",
-    "doctor": "pnpm --filter @bip/shared build && pnpm --filter @bip/server build && node apps/server/dist/cli.js doctor"
+    "doctor": "pnpm --filter @bip/shared build && pnpm --filter @bip/server build && node apps/server/dist/cli.js doctor",
+    "bootstrap": "pnpm --filter @bip/shared build && pnpm --filter @bip/server build && node apps/server/dist/cli.js setup",
+    "demo:create": "node examples/demo-project/create.mjs",
+    "licences:guard": "node scripts/licence-guard.mjs",
+    "licenses:report": "node scripts/licenses-report.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "~1.64.0",
     "@types/node": "^22.0.0",
     "concurrently": "^9.0.0",

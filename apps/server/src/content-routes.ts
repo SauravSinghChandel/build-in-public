@@ -202,7 +202,7 @@ export function contentRoutes(app: Hono, content: Content) {
       c.req.param("postId")!,
     );
     const index = revisions.findIndex((r) => r.id === revisionId);
-    if (index < 0) throw Error("Revision not found");
+    if (index < 0) throw Error("That revision no longer exists. Reload the post.");
     const old = revisions[index];
     return c.json(
       await s.addRevision(c.req.param("storyId")!, c.req.param("postId")!, {
