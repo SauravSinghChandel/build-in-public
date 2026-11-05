@@ -49,7 +49,11 @@ export class Content {
     readonly db: Database.Database,
     readonly home: string,
   ) {
-    this.jobs = new JobRunner(db, (j, s, e) => this.run(j, s, e));
+    this.jobs = new JobRunner(
+      db,
+      (j, s, e) => this.run(j, s, e),
+      path.join(home, "workspaces"),
+    );
     queueMicrotask(() => this.jobs.start());
   }
   async story(projectId: string, storyId: string): Promise<StoryView> {
@@ -106,7 +110,7 @@ export class Content {
   }
   async task(type: string, projectId: string, payload: Record<string, any>) {
     const s = await this.projects.store(projectId);
-    if (s.readOnly) throw Error("Project is read-only");
+    if (s.readOnly) throw Error("This project is read-only because another Build in Public process holds its lock. Close the other instance, then reload.");
     const agent = provider(payload.provider);
     const detected = await agent.detect();
     if (!detected.installed || detected.authed === false)
@@ -139,15 +143,15 @@ export class Content {
     emit: (type: string, data?: Record<string, unknown>) => void,
   ) {
     if (job.type === "publish") {
-      if (!this.publishHandler) throw Error("Publishing unavailable");
+      if (!this.publishHandler) throw Error("Publishing isn't available in this session. Restart Build in Public, then try again.");
       return this.publishHandler(job, signal, emit);
     }
     if (job.type.startsWith("video.")) {
-      if (!this.videoHandler) throw Error("Video studio unavailable");
+      if (!this.videoHandler) throw Error("The video studio isn't available in this session. Restart Build in Public, then try again.");
       return this.videoHandler(job, signal, emit);
     }
     if (job.type.startsWith("image.")) {
-      if (!this.imageHandler) throw Error("Image studio unavailable");
+      if (!this.imageHandler) throw Error("The image studio isn't available in this session. Restart Build in Public, then try again.");
       return this.imageHandler(job, signal, emit);
     }
     const s = await this.projects.store(job.project_id),
@@ -192,7 +196,7 @@ export class Content {
       const source = p.sourcePostId
         ? view.posts.find((v) => v.post.id === p.sourcePostId)
         : current;
-      if (!source) throw Error("Source post not found");
+      if (!source) throw Error("The other platform's draft no longer exists. Draft it again, then retry.");
       instruction = `Edit only ${current.post.platform}. Instruction: ${p.instruction}. Current text: ${JSON.stringify(current.revisions.at(-1)?.parts)}. Source platform text: ${JSON.stringify(source.revisions.at(-1)?.parts)}. Return the same platform schema with highlights and claims_to_verify.`;
     } else
       instruction = `Draft X and LinkedIn together. Chosen angle: ${p.angle || story?.angle || story?.title}. Focus on that angle.`;
@@ -337,9 +341,9 @@ export class Content {
   async checklist(projectId: string, storyId: string, postId: string) {
     const view = await this.story(projectId, storyId),
       v = view.posts.find((v) => v.post.id === postId);
-    if (!v) throw Error("Post not found");
+    if (!v) throw Error("This post no longer exists. Reload the story.");
     const revision = v.revisions.find((r) => r.id === v.post.currentRevisionId);
-    if (!revision) throw Error("Post has no revision");
+    if (!revision) throw Error("This post has no text yet. Write or draft it first.");
     const s = await this.projects.store(projectId),
       text = revision.parts.join("\n\n");
     return {
@@ -365,7 +369,7 @@ export class Content {
     if (check.secrets.length)
       throw Error("Remove possible secrets before approval");
     if (check.privateMatches.length && !acknowledgePrivate)
-      throw Error("Review Never mention warnings");
+      throw Error("The post mentions something on your Never mention list. Edit it or acknowledge each warning, then approve.");
     if (check.claims.some((_, i) => !checked.includes(i)))
       throw Error("Verify each claim before approval");
     const s = await this.projects.store(projectId);

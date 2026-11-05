@@ -19,20 +19,20 @@ export function within(target: string, root: string) {
 }
 export async function resolveSafe(input: string, roots: string[]) {
   if (input.split(/[\\/]/).includes(".."))
-    throw Error("Path traversal rejected");
+    throw Error("Path traversal (..) isn't allowed. Use the full folder path, such as ~/projects/app.");
   const expanded =
     input === "~"
       ? os.homedir()
       : input.startsWith("~/")
         ? path.join(os.homedir(), input.slice(2))
         : input;
-  if (!path.isAbsolute(expanded)) throw Error("Use an absolute path");
+  if (!path.isAbsolute(expanded)) throw Error("Use an absolute folder path that starts with / or ~/.");
   const actual = await fs.realpath(expanded);
   for (const root of roots) {
     const allowed = path.resolve(root);
     if (within(actual, allowed)) return actual;
   }
-  throw Error("Path is outside allowed roots");
+  throw Error("That folder is outside your home folder. Choose a folder inside it.");
 }
 export async function directorySuggestions(
   prefix: string,

@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 10.34.9
+
+jobs:
+  check:
+    name: Typecheck, unit tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install system tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pnpm install --frozen-lockfile
+      - name: Configure git identity for test repositories
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+          git config --global init.defaultBranch main
+      - name: Licence guard (no GSAP, no Remotion)
+        run: pnpm licences:guard
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/bip-config
+      - run: pnpm build
+      - name: bip doctor --ci
+        run: node apps/server/dist/cli.js doctor --ci
+        env:
+          BIP_HOME: ${{ runner.temp }}/bip-home
+
+  e2e:
+    name: Playwright e2e (fake agents)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install system tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Configure git identity for test repositories
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+          git config --global init.defaultBranch main
+      - name: E2E (fake claude/codex)
+        run: pnpm test:e2e
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/bip-config
+          BIP_CLAUDE_BIN: ${{ github.workspace }}/tests/fixtures/agents/fake.mjs
+          BIP_CODEX_BIN: ${{ github.workspace }}/tests/fixtures/agents/fake.mjs
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

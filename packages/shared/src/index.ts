@@ -171,10 +171,18 @@ export interface Check {
   hard: boolean;
   hint: string;
 }
+export interface Versions {
+  bip: string;
+  hyperframes?: string;
+  playwright?: string;
+  claude?: string;
+  codex?: string;
+}
 export interface DoctorReport {
   checks: Check[];
   dataPath: string;
   backups: string[];
+  versions?: Versions;
 }
 
 export type StoryData = z.infer<typeof Story>;

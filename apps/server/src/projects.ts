@@ -101,7 +101,7 @@ export class Projects {
   get(id: string) {
     const row = this.db.prepare("SELECT * FROM projects WHERE id=?").get(id) as
       Registry | undefined;
-    if (!row) throw Object.assign(Error("Project not found"), { status: 404 });
+    if (!row) throw Object.assign(Error("That project isn't tracked any more. Go back to Projects and pick it again."), { status: 404 });
     return row;
   }
   async store(id: string) {
@@ -132,12 +132,12 @@ export class Projects {
   }
   private async explicitRoot(input: string) {
     if (input.split(/[\\/]/).includes(".."))
-      throw Error("Path traversal rejected");
+      throw Error("Path traversal (..) isn't allowed. Use the full folder path, such as ~/projects/app.");
     const expanded = input.replace(/^~(?=\/|$)/, this.home);
     if (!path.isAbsolute(expanded))
       throw Error("Choose an absolute folder path");
     const root = await fs.realpath(expanded);
-    if (!(await fs.stat(root)).isDirectory()) throw Error("Choose a folder");
+    if (!(await fs.stat(root)).isDirectory()) throw Error("Enter a folder path to scan.");
     // An explicit scan authorizes this canonical root for subsequent tracking.
     this.db
       .prepare(
@@ -199,7 +199,7 @@ export class Projects {
         await this.stores.get(match.id)?.close(p);
         this.stores.delete(match.id);
         if (meta && meta.id !== match.id)
-          throw Error("Repository identity conflicts with tracked project");
+          throw Error("This repository is already tracked under another path. Use Locate… on that project instead of adding it again.");
         this.db
           .prepare("UPDATE projects SET path=?,status='active' WHERE id=?")
           .run(p, match.id);
@@ -277,7 +277,7 @@ export class Projects {
     const git = await info(p);
     const meta = await readMetadata(p);
     if (meta && meta.id !== id)
-      throw Error("Repository identity conflicts with tracked project");
+      throw Error("This repository is already tracked under another path. Use Locate… on that project instead of adding it again.");
     if (
       meta?.id !== id &&
       !(
@@ -309,7 +309,7 @@ export class Projects {
     const s = await this.store(id);
     if (confirmName !== s.project.name)
       throw Error("Type the project name to confirm deletion");
-    if (s.readOnly) throw Error("Project is read-only");
+    if (s.readOnly) throw Error("This project is read-only because another Build in Public process holds its lock. Close the other instance, then reload.");
     const root = await resolveSafe(s.root, [s.repo]);
     await this.untrack(id);
     await fs.rm(root, { recursive: true });

@@ -21,7 +21,7 @@ import { Projects } from "./projects.js";
 import { directorySuggestions, dataHome } from "./paths.js";
 import { log, git } from "./git.js";
 import { backup } from "./backup.js";
-import { agents, doctor } from "./doctor.js";
+import { agents, doctor, versions } from "./doctor.js";
 import { Content } from "./content.js";
 import { contentRoutes } from "./content-routes.js";
 import { VideoStudio } from "./video/studio.js";
@@ -67,9 +67,12 @@ export function createApp(
           ? "VALIDATION_ERROR"
           : extra.apiCode || "REQUEST_FAILED",
         e.message,
+        // Plain errors already say what to do; only schema errors need a generic hint.
         extra.apiCode
           ? extra.hint
-          : "Check the input and folder permissions, then try again.",
+          : e instanceof z.ZodError
+            ? "Check the values you entered, then try again."
+            : undefined,
       ),
       status as 400,
     );
@@ -238,6 +241,7 @@ export function createApp(
     ),
   );
   app.get("/api/agents/status", async (c) => c.json(await agents()));
+  app.get("/api/versions", async (c) => c.json(await versions()));
   const content = new Content(projects, db, home);
   contentRoutes(app, content);
   const images = new ImageStudio(content);

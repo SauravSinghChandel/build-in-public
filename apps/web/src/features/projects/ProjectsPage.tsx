@@ -1,7 +1,7 @@
 import type { ProjectRow } from "@bip/shared";
 import { Link } from "@tanstack/react-router";
 import { GitBranch, Plus, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { Path } from "../../components/Path";
 import { Button } from "../../components/ui/button";
@@ -15,6 +15,11 @@ import {
   useRefresh,
 } from "../../components/workspace";
 import { Locate } from "../../features/projects/Locate";
+import {
+  finishOnboarding,
+  Onboarding,
+  onboardingDone,
+} from "../../features/projects/Onboarding";
 export function ProjectsPage({
   onAdd,
   onRescan,
@@ -26,6 +31,14 @@ export function ProjectsPage({
   const [sort, setSort] = useState("unshared");
   const refresh = useRefresh();
   const [locate, setLocate] = useState<ProjectRow | null>(null);
+  const [onboarding, setOnboarding] = useState(() => !onboardingDone());
+  useEffect(() => {
+    // Once anything is tracked, first-run onboarding never comes back.
+    if (data?.length) {
+      finishOnboarding();
+      setOnboarding(false);
+    }
+  }, [data?.length]);
   const sorted = [...(data || [])].sort((a, b) =>
     sort === "name"
       ? a.name.localeCompare(b.name)
@@ -53,6 +66,8 @@ export function ProjectsPage({
           <Loading />
         ) : error ? (
           <ErrorBox error={error} />
+        ) : !data?.length && onboarding ? (
+          <Onboarding onFinish={() => setOnboarding(false)} />
         ) : !data?.length ? (
           <Empty title="Add the folder where your projects live">
             <p>

@@ -1,4 +1,9 @@
-import type { AgentStatus, DoctorReport, TrackedDir } from "@bip/shared";
+import type {
+  AgentStatus,
+  DoctorReport,
+  TrackedDir,
+  Versions,
+} from "@bip/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Monitor, Moon, Plus, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -55,6 +60,11 @@ export function AppSettings({ onAdd }: { onAdd: () => void }) {
     queryKey: ["agents"],
     queryFn: () => api<AgentStatus[]>("/agents/status"),
     enabled: section === "Agents",
+  });
+  const versions = useQuery({
+    queryKey: ["versions"],
+    queryFn: () => api<Versions>("/versions"),
+    enabled: section === "About",
   });
   const storage = useQuery({
     queryKey: ["doctor"],
@@ -217,10 +227,29 @@ export function AppSettings({ onAdd }: { onAdd: () => void }) {
             </>
           ) : (
             <>
-              <p>Build in Public · 0.1.0</p>
+              <p>Build in Public · {versions.data?.bip ?? "…"}</p>
               <p className="muted">
                 A local workspace for the work you haven't shared yet.
               </p>
+              {versions.error && <ErrorBox error={versions.error} />}
+              <dl className="versions" aria-label="Versions">
+                {(
+                  [
+                    ["Build in Public", versions.data?.bip],
+                    ["HyperFrames", versions.data?.hyperframes],
+                    ["Playwright", versions.data?.playwright],
+                    ["Claude Code", versions.data?.claude],
+                    ["Codex", versions.data?.codex],
+                  ] as const
+                ).map(([name, v]) => (
+                  <div key={name}>
+                    <dt>{name}</dt>
+                    <dd className="mono">
+                      {versions.isPending ? "…" : v || "Not installed"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
               <a
                 href="https://opensource.org/license/mit"
                 target="_blank"
