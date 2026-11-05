@@ -15,14 +15,15 @@ On Linux, with Node 22 or later, Git and FFmpeg installed:
 ```sh
 git clone https://github.com/SauravSinghChandel/build-in-public.git && cd build-in-public
 npx --yes pnpm@10.34.9 install
-npx --yes pnpm@10.34.9 exec playwright install chromium
-npx --yes pnpm@10.34.9 run doctor
+npx --yes pnpm@10.34.9 run bootstrap
 npx --yes pnpm@10.34.9 start
 ```
 
-`start` builds the app, serves it on `http://127.0.0.1:4310`, prints a one-time session URL and opens it in your browser. Sign in to the agents yourself beforehand: run `claude` once in a terminal, and/or `codex login`.
+`run bootstrap` checks Node, Git, FFmpeg, Chromium and the agent CLIs, prints a fix for anything missing, and offers to install Playwright's Chromium. `start` builds the app, serves it on `http://127.0.0.1:4310`, prints a one-time session URL and opens it in your browser. Sign in to the agents yourself beforehand: run `claude` once in a terminal, and/or `codex login`.
 
-The commands use `npx pnpm@10.34.9` because, with Ubuntu's packaged Node, `corepack enable` fails with a permission error (it tries to write to `/usr/bin`). If you have corepack set up (for example with Node from nodejs.org, nvm or Homebrew), `corepack enable` and then plain `pnpm install`, `pnpm start` and so on are equivalent (the version is pinned in `package.json`). Write `pnpm run doctor`, not `pnpm doctor`: pnpm has a built-in `doctor` command.
+The commands use `npx pnpm@10.34.9` because, with Ubuntu's packaged Node, `corepack enable` fails with a permission error (it tries to write to `/usr/bin`). If you have corepack set up (for example with Node from nodejs.org, nvm or Homebrew), `corepack enable` and then plain `pnpm install`, `pnpm start` and so on are equivalent (the version is pinned in `package.json`). Write `pnpm run bootstrap` and `pnpm run doctor` (not `pnpm setup` / `pnpm doctor`): pnpm has built-in commands with those names.
+
+New here? `npx --yes pnpm@10.34.9 demo:create` makes a throwaway repo with a dozen commits (and a tiny site to capture), so you can try every workflow without touching your own projects.
 
 ## How it works
 

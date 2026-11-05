@@ -34,6 +34,10 @@ Run them as `npx --yes pnpm@10.34.9 <script>`:
 | `build` | Builds shared, server and web |
 | `start` | `build`, then `bip start` on port 4310 |
 | `run doctor` | Builds and runs `bip doctor`. Use `run`: `pnpm doctor` is pnpm's own command |
+| `run bootstrap` | First-time setup checks (`bip setup`) with fix commands |
+| `demo:create [dir]` | Generate the demo repo used for screenshots and manual testing |
+| `licences:guard` | Fails if GSAP or Remotion enter the lockfile; warns about HyperFrames' vendored GSAP |
+| `licenses:report [out]` | Regenerate the dependency licence table |
 | `typecheck` | Type-checks every package and the tests |
 | `test` | Unit and integration tests (Vitest) |
 | `test:e2e` | `build`, then the Playwright end-to-end tests |

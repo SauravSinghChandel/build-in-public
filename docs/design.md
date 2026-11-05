@@ -18,7 +18,7 @@ The same amber appears in exactly three other places: the unshared count on the 
 | `--line` | `#2B303B` | `#DDE1E7` | 1px borders and dividers |
 | `--text` | `#E4E7EC` | `#1A1D23` | primary text |
 | `--muted` | `#8A91A0` | `#5F6675` | secondary text, timestamps |
-| `--signal` | `#E8B04B` | `#B7801A` | unshared work, primary action, focus |
+| `--signal` | `#E8B04B` | `#8F6210` | unshared work, primary action, focus |
 | `--signal-ink` | `#1A1405` | `#FFFFFF` | text on signal |
 | `--ok` | `#6FB7A8` | `#2F7F70` | published |
 | `--danger` | `#E07070` | `#B8403F` | errors, destructive |
