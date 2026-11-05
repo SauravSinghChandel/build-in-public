@@ -11,6 +11,59 @@ const escape = (v: string) =>
         c
       ]!,
   );
+// IBM Plex Sans 600 advance widths (1/1000 em) for ASCII 32..126, measured from the bundled font.
+const PLEX_SANS_600 = [
+  236, 309, 471, 656, 600, 960, 713, 260, 337, 337, 556, 600, 299, 402, 299,
+  437, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 319, 319, 600, 600,
+  600, 493, 899, 672, 663, 642, 689, 600, 577, 712, 719, 423, 545, 678, 521,
+  817, 719, 712, 641, 712, 664, 611, 580, 689, 638, 949, 655, 632, 599, 329,
+  437, 329, 600, 559, 600, 559, 600, 513, 600, 558, 350, 545, 588, 275, 275,
+  562, 294, 888, 588, 563, 600, 600, 393, 499, 374, 588, 524, 819, 544, 524,
+  502, 363, 376, 363, 600,
+];
+/** Width of `text` in em for the title font (Plex Mono is a fixed 0.6 em). */
+export function textEm(text: string, mono = false) {
+  let em = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0)!;
+    em += mono
+      ? 0.6
+      : code >= 32 && code < 127
+        ? PLEX_SANS_600[code - 32] / 1000
+        : 0.72;
+  }
+  return em * 1.03; // headroom for kerning and rounding
+}
+/**
+ * Largest font size in vw (≤ base) at which every word fits within maxVw of the frame width
+ * and the text wraps to at most `lines` lines. Deterministic: no layout measurement needed.
+ */
+export function fitTitle(
+  text: string,
+  { base = 7, maxVw = 90, lines = 3, mono = false } = {},
+) {
+  const words = text.split(/\s+/).filter(Boolean),
+    space = textEm(" ", mono);
+  for (let f = base; f > 1; f -= 0.25) {
+    const limit = maxVw / f;
+    let count = 1,
+      line = 0,
+      fits = true;
+    for (const word of words) {
+      const w = textEm(word, mono);
+      if (w > limit) {
+        fits = false;
+        break;
+      }
+      if (line && line + space + w > limit) {
+        count++;
+        line = w;
+      } else line = line ? line + space + w : w;
+    }
+    if (fits && count <= lines) return Math.round(f * 100) / 100;
+  }
+  return 1;
+}
 const digest = (text: string) =>
   createHash("sha256").update(text).digest("hex");
 export function generatedHtml(html: string) {
@@ -67,8 +120,14 @@ export async function buildHtml(
       dur = (s.endMs - s.startMs) / 1000,
       attrs = `class="clip" data-start="${start}" data-duration="${dur}" data-track-index="${i}"`;
     if (s.kind === "title" || s.kind === "outro") {
+      // First line is the headline, the rest (e.g. the project website) is a subline.
+      const [headline, ...rest] = (s.notes || c.title).split("\n"),
+        sub = rest.join(" ").trim(),
+        mono = c.style === "technical";
+      const fit = fitTitle(headline, { mono }),
+        tall = fitTitle(headline, { base: 10, lines: 4, mono });
       html.push(
-        `<section id="scene-${i}" ${attrs}><div class="clip card"><h1>${escape(s.notes || c.title)}</h1><p>${s.kind === "title" ? "Built with intention" : "Build · Ship · Share"}</p></div></section>`,
+        `<section id="scene-${i}" ${attrs}><div class="clip card"><h1 style="--fit:${fit}vw;--fit-tall:${tall}vw">${escape(headline)}</h1>${sub ? `<p>${escape(sub)}</p>` : ""}</div></section>`,
       );
       animations.push({
         id: `scene-${i}`,
@@ -81,7 +140,7 @@ export async function buildHtml(
       });
     } else if (s.kind === "still") {
       html.push(
-        `<section id="scene-${i}" ${attrs}>${s.sourceSha ? `<img id="still-${i}" class="still" src="assets/${s.sourceSha}">` : `<div class="clip card"><pre>$ git diff --stat\n  Built. Tested. Shipped.</pre></div>`}${c.style === "technical" ? `<div class="callout">${escape(s.notes || "The implementation detail")}</div>` : ""}</section>`,
+        `<section id="scene-${i}" ${attrs}>${s.sourceSha ? `<img id="still-${i}" class="still" src="assets/${s.sourceSha}">` : `<div class="clip card"><pre>${escape(s.notes || c.title)}</pre></div>`}${c.style === "technical" && s.sourceSha && s.notes ? `<div class="callout">${escape(s.notes)}</div>` : ""}</section>`,
       );
       animations.push({
         id: `scene-${i}`,

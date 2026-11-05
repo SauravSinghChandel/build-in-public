@@ -27,6 +27,7 @@ import {
 import { git } from "./git.js";
 
 export { agentSchema, parseAgentOutput } from "./agents/schema.js";
+import { activityLabel } from "./agents/activity.js";
 import { agentSchema, parseAgentOutput } from "./agents/schema.js";
 const Summary = z.strictObject({
   what_it_is: z.string(),
@@ -240,13 +241,10 @@ export class Content {
             .prepare("UPDATE agent_runs SET session_id=? WHERE id=?")
             .run(event.sessionId, runId);
         if (event.type === "text") emit("text", { text: event.text });
-        else if (event.type === "tool" || event.type === "progress")
-          emit("progress", {
-            message:
-              event.type === "tool"
-                ? `Reading ${event.name || "context"}`
-                : "Working…",
-          });
+        else if (event.type === "tool") {
+          const activity = activityLabel(event);
+          if (activity) emit("progress", { message: activity });
+        }
         if (event.type === "error") errors.push(String(event.message));
         if (event.final) {
           this.db

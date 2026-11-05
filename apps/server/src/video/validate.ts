@@ -1,10 +1,38 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { VideoComposition } from "@bip/shared";
+import { fileURLToPath } from "node:url";
 import { hyperframes } from "./process.js";
+/** Bundled IBM Plex (SIL OFL, see fonts/OFL.txt), staged next to every lint/render as trusted files. */
+export const fontDir = fileURLToPath(
+  new URL("../../../../packages/templates/video/fonts/", import.meta.url),
+);
+export const FONT_FILES = [
+  ["IBM Plex Sans", 400, "ibm-plex-sans-latin-400-normal.woff2"],
+  ["IBM Plex Sans", 600, "ibm-plex-sans-latin-600-normal.woff2"],
+  ["IBM Plex Mono", 400, "ibm-plex-mono-latin-400-normal.woff2"],
+] as const;
+const fontFaces =
+  FONT_FILES.map(
+    ([family, , file]) =>
+      `<link rel="preload" href="bip-fonts/${file}" as="font" type="font/woff2" crossorigin>`,
+  ).join("") +
+  `<style data-bip-fonts>${FONT_FILES.map(
+    ([family, weight, file]) =>
+      `@font-face{font-family:'${family}';src:url('bip-fonts/${file}') format('woff2');font-weight:${weight};font-style:normal;font-display:block}`,
+  ).join("")}</style>`;
+/** Copies the bundled fonts into a staging directory (never into the composition itself). */
+export async function stageFonts(dir: string) {
+  await fs.mkdir(path.join(dir, "bip-fonts"), { recursive: true });
+  for (const [, , file] of FONT_FILES)
+    await fs.copyFile(
+      path.join(fontDir, file),
+      path.join(dir, "bip-fonts", file),
+    );
+}
 export function renderHtml(html: string) {
   const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
-  return html.replace(/<head\b[^>]*>/i, (match) => match + csp);
+  return html.replace(/<head\b[^>]*>/i, (match) => match + csp + fontFaces);
 }
 export async function validateVideo(
   dir: string,
@@ -101,6 +129,7 @@ export async function validateVideo(
         for (const [sha, file] of sources)
           await fs.copyFile(file, path.join(stage, "assets", sha));
       }
+      await stageFonts(stage);
       await fs.writeFile(
         path.join(stage, "index.html"),
         renderHtml(await fs.readFile(path.join(stage, "index.html"), "utf8")),

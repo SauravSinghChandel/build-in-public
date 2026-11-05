@@ -1,14 +1,17 @@
-import { CaptureStep } from "@bip/shared";
+import { CaptureStep, type StepCheck } from "@bip/shared";
 import { Button } from "../../components/ui/button";
 type Step = ReturnType<typeof CaptureStep.parse>;
 export function CaptureSteps({
   steps,
   onChange,
   video = false,
+  checks,
 }: {
   steps: string;
   onChange: (s: string) => void;
   video?: boolean;
+  /** Dry-run results for generated steps (same order); omitted once the user edits. */
+  checks?: StepCheck[];
 }) {
   let rows: Partial<Step>[] = [];
   try {
@@ -27,7 +30,10 @@ export function CaptureSteps({
   return (
     <div className="capture-step-editor" aria-label="Manual steps editor">
       {rows.map((s, i) => (
-        <div className="capture-step" key={i}>
+        <div
+          className={`capture-step${checks?.[i] && !["ok", "none"].includes(checks[i].status) ? " flagged" : ""}`}
+          key={i}
+        >
           <select
             aria-label={`Step ${i + 1} action`}
             value={s.action}
@@ -63,7 +69,7 @@ export function CaptureSteps({
           {["click", "type", "hover", "scrollTo"].includes(s.action || "") && (
             <input
               aria-label={`Step ${i + 1} selector`}
-              placeholder="CSS selector"
+              placeholder="Selector"
               value={s.selector || ""}
               onChange={(e) => patch(i, { selector: e.target.value })}
             />
@@ -122,6 +128,22 @@ export function CaptureSteps({
               />
             </>
           )}
+          {checks?.[i] && checks[i].status !== "none" && (
+            <span
+              className={`step-check ${checks[i].status}`}
+              role="note"
+              aria-label={`Step ${i + 1} check`}
+              title={checks[i].message}
+            >
+              {checks[i].status === "ok"
+                ? "✓ Found on page"
+                : checks[i].status === "missing"
+                  ? "Not found on page"
+                  : checks[i].status === "ambiguous"
+                    ? `Matches ${checks[i].count} elements`
+                    : "Invalid selector"}
+            </span>
+          )}
           <Button
             aria-label={`Remove step ${i + 1}`}
             onClick={() => edit(rows.filter((_, n) => n !== i))}
@@ -139,5 +161,23 @@ export function CaptureSteps({
         Add step
       </Button>
     </div>
+  );
+}
+
+/** One-line summary above generated steps: how many were found on the live page. */
+export function StepCheckSummary({ checks }: { checks?: StepCheck[] }) {
+  if (!checks) return null;
+  const checked = checks.filter((c) => c.status !== "none"),
+    flagged = checked.filter((c) => c.status !== "ok").length;
+  if (!checked.length) return null;
+  return (
+    <p
+      className={flagged ? "step-summary flagged" : "step-summary"}
+      role="status"
+    >
+      {flagged
+        ? `${flagged} of ${checked.length} selectors need attention. Fix the marked steps before approving.`
+        : `All ${checked.length} selectors were found on the page.`}
+    </p>
   );
 }

@@ -1,9 +1,14 @@
-import type { AgentStatus, JobView, ProjectRow } from "@bip/shared";
+import {
+  splitJobError,
+  type AgentStatus,
+  type JobView,
+  type ProjectRow,
+} from "@bip/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { Button } from "../../components/ui/button";
-import { message } from "../../components/workspace";
+import { message, useProjects } from "../../components/workspace";
 export function useJobs() {
   return useQuery({
     queryKey: ["jobs"],
@@ -17,11 +22,16 @@ export function JobEvents() {
     const source = new EventSource("/api/events");
     source.addEventListener("job", (event) => {
       const e = JSON.parse((event as MessageEvent).data);
-      if (e.type === "progress" && e.message)
+      if (e.type === "progress" && e.message) {
         q.setQueryData<Record<string, string>>(["partials"], (old) => ({
           ...old,
           [e.jobId]: e.message,
         }));
+        q.setQueryData<Record<string, string>>(["activity"], (old) => ({
+          ...old,
+          [e.jobId]: e.message,
+        }));
+      }
       if (e.type === "text")
         q.setQueryData<Record<string, string>>(["partials"], (old) => ({
           ...old,
@@ -84,12 +94,36 @@ export function AgentPicker({
     </div>
   );
 }
+/** Latest agent/tool activity per job ("Reading styles.css…"), streamed over SSE. */
+export function useActivity() {
+  return useQuery<Record<string, string>>({
+    queryKey: ["activity"],
+    queryFn: () => ({}),
+    enabled: false,
+  }).data;
+}
+export function JobError({ error }: { error?: string | null }) {
+  const { message, details } = splitJobError(error);
+  if (!message) return null;
+  return (
+    <div className="job-error">
+      <p className="error">{message}</p>
+      {details && (
+        <details>
+          <summary>Details</summary>
+          <pre>{details}</pre>
+        </details>
+      )}
+    </div>
+  );
+}
 export function JobFeedback({ job }: { job?: JobView }) {
   const partials = useQuery<Record<string, string>>({
     queryKey: ["partials"],
     queryFn: () => ({}),
     enabled: false,
   });
+  const activity = useActivity();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -104,20 +138,25 @@ export function JobFeedback({ job }: { job?: JobView }) {
         {active
           ? ` · ${Math.max(0, Math.floor((now - Date.parse(job.started_at || job.created_at)) / 1000))}s`
           : ""}
+        {active && activity?.[job.id] ? (
+          <span className="job-activity"> · {activity[job.id]}</span>
+        ) : null}
       </span>
-      {job.error && <p className="error">{job.error}</p>}
-      {active && (
-        <pre>
-          {(
-            partials.data?.[job.id] ||
-            (job.type === "project.summary"
-              ? "Reading repository…"
-              : job.type === "story.angles"
-                ? "Finding story angles…"
-                : "Preparing your draft…")
-          ).slice(-4000)}
-        </pre>
-      )}
+      <JobError error={job.error} />
+      {active &&
+        (partials.data?.[job.id] || !activity?.[job.id]) &&
+        partials.data?.[job.id] !== activity?.[job.id] && (
+          <pre>
+            {(
+              partials.data?.[job.id] ||
+              (job.type === "project.summary"
+                ? "Reading repository…"
+                : job.type === "story.angles"
+                  ? "Finding story angles…"
+                  : "Preparing your draft…")
+            ).slice(-4000)}
+          </pre>
+        )}
       <Button
         onClick={() =>
           void api(
@@ -133,10 +172,8 @@ export function JobFeedback({ job }: { job?: JobView }) {
 }
 export function JobsIndicator() {
   const jobs = useJobs();
-  const projects = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api<ProjectRow[]>("/projects"),
-  });
+  const projects = useProjects();
+  const activity = useActivity();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>(() =>
     JSON.parse(localStorage.getItem("bip-dismissed-jobs") || "[]"),
@@ -170,7 +207,14 @@ export function JobsIndicator() {
                   "Project"}{" "}
                 · {j.status}
               </small>
-              {j.error && <p title={j.error}>{j.error.slice(0, 180)}</p>}
+              {["running", "queued"].includes(j.status) && activity?.[j.id] && (
+                <p className="muted">{activity[j.id]}</p>
+              )}
+              {j.error && (
+                <p title={splitJobError(j.error).message}>
+                  {splitJobError(j.error).message.slice(0, 180)}
+                </p>
+              )}
               {["failed", "interrupted", "cancelled"].includes(j.status) && (
                 <Button
                   onClick={() =>

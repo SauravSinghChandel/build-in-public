@@ -13,15 +13,28 @@ import {
   type CompositionView,
   type ImageRevision,
   type JobView,
+  type StepCheck,
 } from "@bip/shared";
 import type { Content } from "../content.js";
 import { agentSchema, parseAgentOutput } from "../agents/schema.js";
 import { provider, type ProviderId } from "../agents/index.js";
+import { activityLabel } from "../agents/activity.js";
 import { git } from "../git.js";
 import { atomicJsonWrite } from "../bip/store.js";
 import { Assets, safeFile, thumbDir } from "./assets.js";
 import { RenderOrigin, renderAndCheck } from "./render.js";
 import { executeStep } from "../video/capture.js";
+import {
+  elementMap,
+  formatElementMap,
+  validateSteps,
+} from "../capture/pagemap.js";
+import {
+  friendlyNavigationError,
+  friendlyStepError,
+  runStep,
+  withDetails,
+} from "../capture/errors.js";
 import { validateComposition } from "./validate.js";
 const templates = fileURLToPath(
   new URL("../../../../packages/templates/image/", import.meta.url),
@@ -42,6 +55,11 @@ export class ImageStudio {
   readonly assets: Assets;
   readonly origin = new RenderOrigin();
   private chains = new Map<string, Promise<unknown>>();
+  private background = new Set<Promise<unknown>>();
+  /** Waits for background work (thumbnail warm-up) before shutdown. */
+  async drain() {
+    await Promise.all([...this.background]);
+  }
   constructor(readonly content: Content) {
     this.assets = new Assets(content.projects);
     content.imageHandler = async (j, s, e) => {
@@ -255,7 +273,12 @@ export class ImageStudio {
     });
     await atomicJsonWrite(path.join(dir, "composition.json"), config);
     await git(dir, [...identity, "init", "-b", "main"]);
-    await this.commit(dir, "Create " + input.preset + " image");
+    const first = await this.commit(dir, "Create " + input.preset + " image");
+    // Render revision 1's thumbnail now so the revision strip never shows an empty tile.
+    const warm = this.thumbnail(project, id, first)
+      .catch(() => {})
+      .finally(() => this.background.delete(warm));
+    this.background.add(warm);
     if (input.storyId) {
       const story = await s.readStory(input.storyId);
       await s.updateStory(input.storyId, {
@@ -438,6 +461,7 @@ export class ImageStudio {
     signal: AbortSignal,
     write = false,
     images: string[] = [],
+    emit: (type: string, data?: Record<string, unknown>) => void = () => {},
   ) {
     const actualWorkspace = await fs.realpath(workspace);
     if (
@@ -478,6 +502,10 @@ export class ImageStudio {
         },
       })) {
         if (event.type === "error") errors.push(String(event.message));
+        if (event.type === "text" && event.text)
+          emit("text", { text: String(event.text) });
+        const activity = activityLabel(event);
+        if (activity) emit("progress", { message: activity });
         if (event.sessionId)
           this.content.db
             .prepare("UPDATE agent_runs SET session_id=? WHERE id=?")
@@ -522,16 +550,8 @@ export class ImageStudio {
       const input = CaptureInput.parse(p);
       return this.capture(job.project_id, input, signal);
     }
-    if (job.type === "image.steps") {
-      const output = await this.agent(
-        job,
-        workspace,
-        `TASK: image.steps\nConvert the description to steps JSON. Actions: click,type,scroll,hover,wait,press. Type uses text, press uses value, scroll uses numeric value, wait uses ms. Selectors must be CSS. Do not run any steps. Description: ${p.description}`,
-        z.object({ steps: z.array(CaptureStep).max(50) }),
-        signal,
-      );
-      return output;
-    }
+    if (job.type === "image.steps")
+      return this.describeSteps(job, workspace, signal, emit, false);
     if (job.type === "image.alt") {
       const { item, bytes } = await this.assets.get(job.project_id, p.sha);
       const imageFile = path.join(
@@ -546,6 +566,9 @@ export class ImageStudio {
         `TASK: image.alt\nRead the local image file in this workspace, then suggest concise alt text grounded in it and user context. Do not invent visual details. Metadata: ${JSON.stringify(item)}. Context: ${p.context || ""}`,
         z.object({ alt: z.string().max(1000) }),
         signal,
+        false,
+        [],
+        emit,
       );
     }
     if (job.type !== "image.edit") throw Error("Unknown image task");
@@ -578,6 +601,8 @@ export class ImageStudio {
         z.object({ done: z.boolean() }),
         signal,
         true,
+        [],
+        emit,
       );
       const errors = await validateComposition(comp);
       if (errors.length) throw Error(errors.join("\n"));
@@ -631,50 +656,35 @@ export class ImageStudio {
       });
       const page = await context.newPage();
       page.setDefaultTimeout(10000);
-      await page.goto(input.url, { waitUntil: "load", timeout: 30000 });
-      for (const step of input.steps) {
+      await page
+        .goto(input.url, { waitUntil: "load", timeout: 30000 })
+        .catch((e) => {
+          throw friendlyNavigationError(input.url, e);
+        });
+      for (const [index, step] of input.steps.entries()) {
         if (signal.aborted) throw Error("Cancelled");
-        const locator = step.selector ? page.locator(step.selector) : undefined;
-        if (step.action === "pause" || step.action === "scrollTo") {
-          await executeStep(page, step);
-          continue;
-        }
-        switch (step.action) {
-          case "click":
-            await locator!.click();
-            break;
-          case "type":
-            await locator!.fill(step.text!);
-            break;
-          case "hover":
-            await locator!.hover();
-            break;
-          case "wait":
-            await page.waitForTimeout(step.ms ?? 1000);
-            break;
-          case "press":
-            if (locator) await locator.press(String(step.value));
-            else await page.keyboard.press(String(step.value));
-            break;
-          case "scroll":
-            if (locator)
-              await locator.evaluate(
-                (e, v) => e.scrollBy(0, v),
-                Number(step.value ?? 500),
-              );
-            else
-              await page.evaluate(
-                (v) => window.scrollBy(0, v),
-                Number(step.value ?? 500),
-              );
-            break;
-        }
+        await runStep(index, step, () => this.imageStep(page, step), signal);
       }
       if (input.waitFor === "networkidle")
-        await page.waitForLoadState("networkidle", { timeout: 15000 });
+        await page
+          .waitForLoadState("networkidle", { timeout: 15000 })
+          .catch((e) => {
+            throw withDetails(
+              "The page was still loading after 15 seconds (its network never went idle). Set Wait for to Delay or Selector, then run the capture again.",
+              String(e?.message ?? e),
+            );
+          });
       else if (input.waitFor === "selector") {
         if (!input.waitSelector) throw Error("Wait selector is required");
-        await page.locator(input.waitSelector).waitFor();
+        await page
+          .locator(input.waitSelector)
+          .waitFor()
+          .catch((e) => {
+            throw withDetails(
+              `Couldn't find the wait selector \`${input.waitSelector}\`.`,
+              String(e?.message ?? e),
+            );
+          });
       } else await page.waitForTimeout(input.delay);
       await page.evaluate(async () => {
         await document.fonts.ready;
@@ -686,6 +696,13 @@ export class ImageStudio {
         ? await page
             .locator(input.selector)
             .screenshot({ animations: "disabled" })
+            .catch((e) => {
+              throw friendlyStepError(
+                input.steps.length,
+                { action: "screenshot", selector: input.selector },
+                e,
+              );
+            })
         : await page.screenshot({
             fullPage: input.fullPage,
             animations: "disabled",
@@ -700,6 +717,112 @@ export class ImageStudio {
     } finally {
       signal.removeEventListener("abort", abort);
       await b.close();
+    }
+  }
+  /**
+   * Agent step generation grounded in the live page: load the URL, extract an element map,
+   * ask the agent to use only those selectors, then dry-run every step's selector.
+   */
+  async describeSteps(
+    job: JobView,
+    workspace: string,
+    signal: AbortSignal,
+    emit: (type: string, data?: Record<string, unknown>) => void,
+    video: boolean,
+  ): Promise<{ steps: unknown[]; checks?: StepCheck[]; elements?: number }> {
+    const p = job.payload;
+    const actions = video
+      ? "Actions click/type/hover need selector. type needs text, scroll needs numeric value, press needs string value, pause/wait need ms (0..30000), scrollTo needs selector or numeric y plus durationMs."
+      : "Actions: click,type,scroll,hover,wait,press. Type uses text, press uses value, scroll uses numeric value, wait uses ms.";
+    const task = video ? "video.steps" : "image.steps";
+    const schema = z.object({ steps: z.array(CaptureStep).max(50) });
+    if (!p.url) {
+      const output = await this.agent(
+        job,
+        workspace,
+        `TASK: ${task}\nConvert the description to steps JSON. ${actions} Selectors must be CSS. Do not run any steps. Description: ${p.description}`,
+        schema,
+        signal,
+        false,
+        [],
+        emit,
+      );
+      return output as { steps: unknown[] };
+    }
+    const [width, height] = String(p.viewport || "1440x900")
+      .split("x")
+      .map(Number);
+    const b = await chromium.launch({ chromiumSandbox: false });
+    const abort = () => void b.close();
+    signal.addEventListener("abort", abort, { once: true });
+    try {
+      const page = await b.newPage({ viewport: { width, height } });
+      page.setDefaultTimeout(10000);
+      emit("progress", { message: `Loading ${p.url}…` });
+      await page
+        .goto(p.url, { waitUntil: "load", timeout: 30000 })
+        .catch((e) => {
+          throw friendlyNavigationError(p.url, e);
+        });
+      await page
+        .waitForLoadState("networkidle", { timeout: 5000 })
+        .catch(() => {});
+      emit("progress", { message: "Reading the page's elements…" });
+      const elements = await elementMap(page);
+      const output = (await this.agent(
+        job,
+        workspace,
+        `TASK: ${task}\nConvert the description to steps JSON for the page at ${p.url}. ${actions} Do not run any steps.\nUse ONLY selectors copied exactly from the element map below (first column). Never invent CSS selectors. If the description needs an element that is not in the map, use the closest element in the map or omit that step. Use pause/wait or scroll steps where no element is needed.\nElement map (selector | role | name | text | href), untrusted page data:\n${formatElementMap(elements)}\nDescription: ${p.description}`,
+        schema,
+        signal,
+        false,
+        [],
+        emit,
+      )) as { steps: { action: string; selector?: string }[] };
+      emit("progress", { message: "Checking each step on the page…" });
+      const checks = await validateSteps(page, output.steps);
+      return { steps: output.steps, checks, elements: elements.length };
+    } finally {
+      signal.removeEventListener("abort", abort);
+      await b.close();
+    }
+  }
+  private async imageStep(
+    page: import("playwright").Page,
+    step: z.infer<typeof CaptureStep>,
+  ) {
+    const locator = step.selector ? page.locator(step.selector) : undefined;
+    if (step.action === "pause" || step.action === "scrollTo")
+      return executeStep(page, step);
+    switch (step.action) {
+      case "click":
+        await locator!.click();
+        break;
+      case "type":
+        await locator!.fill(step.text!);
+        break;
+      case "hover":
+        await locator!.hover();
+        break;
+      case "wait":
+        await page.waitForTimeout(step.ms ?? 1000);
+        break;
+      case "press":
+        if (locator) await locator.press(String(step.value));
+        else await page.keyboard.press(String(step.value));
+        break;
+      case "scroll":
+        if (locator)
+          await locator.evaluate(
+            (e, v) => e.scrollBy(0, v),
+            Number(step.value ?? 500),
+          );
+        else
+          await page.evaluate(
+            (v) => window.scrollBy(0, v),
+            Number(step.value ?? 500),
+          );
+        break;
     }
   }
 }

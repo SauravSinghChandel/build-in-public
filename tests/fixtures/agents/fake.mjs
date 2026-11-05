@@ -38,7 +38,14 @@ else if(prompt.includes('TASK: image.edit')) {
  fs.writeFileSync(file,JSON.stringify(comp,null,2));
  if(prompt.includes('FILTER_FAIL'))fs.appendFileSync(path.join(process.cwd(),'styles.css'),'\nimg[data-bip-source]{filter:saturate(1.4)}');
  output={done:true};
-} else if(prompt.includes('TASK: image.steps'))output={steps:[{action:'wait',ms:50}]};
+} else if(prompt.includes('TASK: image.steps')) {
+ // With an element map and FAKE_USE_MAP: one valid map selector, one invented, one ambiguous.
+ const map=(prompt.split('Element map')[1]||'').split('\n').slice(1).map(l=>l.split(' | ')[0]).filter(l=>l.startsWith('role=button'));
+ output=prompt.includes('FAKE_USE_MAP')&&map.length?{steps:[{action:'click',selector:map[0]},{action:'click',selector:'#invented'},{action:'hover',selector:'button'}]}:{steps:[{action:'wait',ms:50}]};
+} else if(prompt.includes('TASK: video.captions')) {
+ const duration=Number(/Duration: (\d+)ms/.exec(prompt)?.[1]||3000);
+ output={captions:[{text:'Clicking Ship records the change',startMs:Math.round(duration*0.4),endMs:Math.round(duration*0.6)},{text:'The page updates in place',startMs:Math.round(duration*0.6),endMs:Math.round(duration*0.8)}]};
+}
 else if(prompt.includes('TASK: image.alt'))output={alt:'A screenshot of the project workspace.'};
 if(mode==='invalid')output={wrong:'shape'};
 if(output) lines=lines.map(e=>{
@@ -46,6 +53,14 @@ if(output) lines=lines.map(e=>{
  if(e.type==='item.completed'&&e.item.type==='agent_message')return {...e,item:{...e.item,text:JSON.stringify(output)}};
  return e;
 });
+// Edit tasks stream tool activity like the real CLIs, so job lines can show it.
+if(/TASK: (image|video)\.edit/.test(prompt)) {
+ const at=lines.findIndex(e=>e.type==='result'||(e.type==='item.completed'&&e.item?.type==='agent_message'));
+ const activity=provider==='claude'
+  ?[{type:'assistant',message:{content:[{type:'tool_use',name:'Read',id:'toolu_fake_read',input:{file_path:path.join(process.cwd(),'styles.css')}}]}},{type:'assistant',message:{content:[{type:'tool_use',name:'Edit',id:'toolu_fake_edit',input:{file_path:path.join(process.cwd(),'composition.json')}}]}}]
+  :[{type:'item.started',item:{id:'fake_cmd',type:'command_execution',command:"bash -lc 'cat styles.css'"}},{type:'item.completed',item:{id:'fake_change',type:'file_change',changes:[{path:path.join(process.cwd(),'composition.json'),kind:'update'}]}}];
+ if(at>0)lines.splice(at,0,...activity);
+}
 // Session arrives before slow output, so a killed server has a durable resume id.
 console.log(JSON.stringify(lines.shift()));
 if(mode==='stubborn') {process.on('SIGINT',()=>{});setTimeout(finish,30000);}

@@ -11,7 +11,7 @@ import { api } from "../../api";
 import { Button } from "../../components/ui/button";
 import { ErrorBox, message } from "../../components/workspace";
 import { AgentPicker, JobFeedback, useJobs } from "../studio/jobs";
-import { assetUrl, useAssets } from "./Media";
+import { assetLabel, assetUrl, useAssets } from "./Media";
 export function ImageStudio({
   p,
   id,
@@ -332,13 +332,17 @@ export function ImageStudio({
                           })
                         }
                       >
-                        {assets.data?.map((a) => (
-                          <option key={a.sha} value={a.sha}>
-                            {a.provenance.type === "upload"
-                              ? a.provenance.filename
-                              : a.sha.slice(0, 8)}
-                          </option>
-                        ))}
+                        {assets.data
+                          ?.filter(
+                            (a) =>
+                              a.mime.startsWith("image/") &&
+                              a.kind !== "contact_sheet",
+                          )
+                          .map((a) => (
+                            <option key={a.sha} value={a.sha}>
+                              {assetLabel(a)}
+                            </option>
+                          ))}
                       </select>
                     </label>
                   ))}
@@ -462,14 +466,11 @@ export function ImageStudio({
                         onChange={(e) => slot("subhead", e.target.value)}
                       />
                     </label>
-                    <label className="field">
-                      Accent colour
-                      <input
-                        type="color"
-                        value={draft.slots.accent}
-                        onChange={(e) => slot("accent", e.target.value)}
-                      />
-                    </label>
+                    <ColourInput
+                      label="Accent colour"
+                      value={draft.slots.accent}
+                      onChange={(v) => slot("accent", v)}
+                    />
                     <label className="field">
                       Background style
                       <select
@@ -633,5 +634,46 @@ export function ImageStudio({
         </Primitive.Content>
       </Primitive.Portal>
     </Primitive.Root>
+  );
+}
+
+/** A visible swatch plus a hex field; only valid #rrggbb values are committed. */
+function ColourInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <div className="field">
+      <span>{label}</span>
+      <div className="colour-input">
+        <input
+          type="color"
+          aria-label={`${label} swatch`}
+          value={value}
+          onChange={(e) => onChange(e.target.value.toLowerCase())}
+        />
+        <input
+          className="mono"
+          aria-label={label}
+          value={text}
+          maxLength={7}
+          spellCheck={false}
+          onChange={(e) => {
+            const next = e.target.value.trim();
+            setText(next);
+            const hex = next.startsWith("#") ? next : "#" + next;
+            if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex.toLowerCase());
+          }}
+          onBlur={() => setText(value)}
+        />
+      </div>
+    </div>
   );
 }

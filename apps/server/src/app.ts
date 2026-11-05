@@ -54,11 +54,16 @@ export function createApp(
       e instanceof z.ZodError
         ? 400
         : (e as Error & { status?: number }).status || 400;
+    const extra = e as Error & { apiCode?: string; hint?: string };
     return c.json(
       error(
-        e instanceof z.ZodError ? "VALIDATION_ERROR" : "REQUEST_FAILED",
+        e instanceof z.ZodError
+          ? "VALIDATION_ERROR"
+          : extra.apiCode || "REQUEST_FAILED",
         e.message,
-        "Check the input and folder permissions, then try again.",
+        extra.apiCode
+          ? extra.hint
+          : "Check the input and folder permissions, then try again.",
       ),
       status as 400,
     );
@@ -143,6 +148,11 @@ export function createApp(
   });
   app.get("/api/projects", async (c) => {
     if (c.req.query("rescan") === "1") await projects.rescan();
+    else if (c.req.query("cached") === "1") {
+      const { rows, stale } = await projects.cachedList();
+      if (stale) c.header("X-BIP-Stale", "1");
+      return c.json(rows);
+    }
     return c.json(await projects.list());
   });
   app.post("/api/projects", async (c) =>
@@ -248,6 +258,7 @@ export function createApp(
     db,
     async close() {
       await content.jobs.close();
+      await images.drain();
       await images.origin.close();
       await projects.close();
       db.close();

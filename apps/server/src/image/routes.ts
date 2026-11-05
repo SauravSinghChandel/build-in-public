@@ -105,6 +105,8 @@ export function imageRoutes(app: Hono, studio: ImageStudio) {
       .strictObject({
         provider: agent,
         description: z.string().min(1).max(10000),
+        url: CaptureInput.shape.url.optional(),
+        viewport: CaptureInput.shape.viewport.optional(),
       })
       .parse(await c.req.json());
     return c.json(studio.task("image.steps", c.req.param("id")!, b));

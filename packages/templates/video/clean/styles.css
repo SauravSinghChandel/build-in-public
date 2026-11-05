@@ -9,7 +9,7 @@ body {
   overflow: hidden;
   background: #15171c;
   color: #e4e7ec;
-  font-family: Arial, sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
 }
 #root {
   position: absolute;
@@ -25,14 +25,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8%;
+  padding: 8% 5%;
   text-align: center;
   background: radial-gradient(ellipse at top, #303947, #15171c 75%);
 }
 h1 {
-  font-size: 7vw;
+  /* --fit is computed by BIP so every word and line stays within 90% of the frame width. */
+  font-size: min(7vw, var(--fit, 7vw));
+  font-weight: 600;
   line-height: 1.05;
-  max-width: 90%;
+  max-width: 90vw;
+  overflow-wrap: anywhere;
   margin: 0 0 3vh;
 }
 .card p {
@@ -117,7 +120,7 @@ pre {
     height: min(52vh, calc(94vw / var(--source-ratio, 1.6)));
   }
   h1 {
-    font-size: 10vw;
+    font-size: min(10vw, var(--fit-tall, 10vw));
   }
   .caption {
     font-size: 5vw;

@@ -7,13 +7,14 @@ import {
   type VideoView,
   type JobView,
   type AssetData,
+  type StepCheck,
 } from "@bip/shared";
 import { api } from "../../api";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message } from "../../components/workspace";
-import { useAssets, assetUrl } from "../image/Media";
-import { CaptureSteps } from "../image/CaptureSteps";
+import { useAssets, assetUrl, assetLabel } from "../image/Media";
+import { CaptureSteps, StepCheckSummary } from "../image/CaptureSteps";
 import { AgentPicker, JobFeedback, useJobs } from "../studio/jobs";
 import { VideoStudio } from "./Studio";
 export function VideoLauncher({
@@ -174,12 +175,18 @@ export function VideoLauncher({
                   {images && (
                     <img width={80} src={assetUrl(p.id, a.sha)} alt="Source" />
                   )}
-                  {a.provenance.type === "video_import" ||
-                  a.provenance.type === "upload"
+                  {a.provenance.type === "video_import"
                     ? a.provenance.filename
-                    : a.kind + " " + a.sha.slice(0, 8)}{" "}
+                    : a.provenance.type === "video_capture"
+                      ? `Recording of ${a.provenance.url} · ${new Date(a.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                      : assetLabel(a)}{" "}
                   {a.quality?.choppy && (
-                    <span className="chip">Choppy · Record again</span>
+                    <span
+                      className="chip"
+                      title={`Heavy animation on this page: ${a.quality.effectiveFps.toFixed(1)} fps delivered, longest gap ${Math.round(a.quality.maxGapMs)} ms. Record again, or pause the animation first.`}
+                    >
+                      Heavy animation on this page · Record again
+                    </span>
                   )}
                 </label>
               ))}
@@ -242,6 +249,7 @@ function RecordDialog({
     [agent, setAgent] = useState<"claude" | "codex">("claude"),
     [describe, setDescribe] = useState(""),
     [capture, setCapture] = useState(""),
+    [checks, setChecks] = useState<StepCheck[] | undefined>(),
     [error, setError] = useState("");
   const jobs = useJobs(),
     q = useQueryClient(),
@@ -255,6 +263,7 @@ function RecordDialog({
   useEffect(() => {
     if (dj?.status === "succeeded") {
       setSteps(JSON.stringify(dj.result.steps, null, 2));
+      setChecks(dj.result.checks);
       setApproved(false);
     }
   }, [dj?.status, describe]);
@@ -263,6 +272,7 @@ function RecordDialog({
   }, [cj?.status]);
   const change = (s: string) => {
     setSteps(s);
+    setChecks(undefined);
     setApproved(false);
   };
   const run = async () => {
@@ -337,6 +347,8 @@ function RecordDialog({
               void api<JobView>(`/projects/${p.id}/video/describe`, "POST", {
                 description,
                 provider: agent,
+                url,
+                viewport,
               })
                 .then((j) => {
                   setDescribe(j.id);
@@ -349,7 +361,8 @@ function RecordDialog({
             Generate steps
           </Button>
           <JobFeedback job={dj} />
-          <CaptureSteps video steps={steps} onChange={change} />
+          <StepCheckSummary checks={checks} />
+          <CaptureSteps video steps={steps} checks={checks} onChange={change} />
           <label className="field">
             Steps JSON
             <textarea

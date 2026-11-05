@@ -6,6 +6,8 @@ export async function start() {
   await ensureConfig();
   const service = createApp({ port: appPort() });
   await service.projects.rescan();
+  // Warm the projects cache so the first page load can render cached rows immediately.
+  void service.projects.refresh().catch(() => {});
   const server = serve(
     { fetch: service.app.fetch, hostname: "127.0.0.1", port: service.port },
     () => {

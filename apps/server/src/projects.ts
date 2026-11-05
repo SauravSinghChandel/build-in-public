@@ -9,7 +9,13 @@ import {
   type DiscoveredRepo,
 } from "@bip/shared";
 import { openProject } from "./bip/store.js";
-import { info, discover, countSince, git as runGit } from "./git.js";
+import {
+  info,
+  discover,
+  countSince,
+  git as runGit,
+  validateRepo,
+} from "./git.js";
 import { resolveSafe, folderSize } from "./paths.js";
 async function readMetadata(repo: string) {
   try {
@@ -21,6 +27,41 @@ async function readMetadata(repo: string) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;
   }
+}
+/** Runs `fn` over `items` with at most `limit` in flight, preserving order. */
+export async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+const GIT_CONCURRENCY = 6;
+const byUnshared = (a: ProjectRow, b: ProjectRow) =>
+  b.unsharedCount - a.unsharedCount || a.name.localeCompare(b.name);
+async function assertRepo(p: string) {
+  const check = await validateRepo(p);
+  if (!check.valid)
+    throw Object.assign(
+      Error(`Couldn't track ${path.basename(p)}: ${check.reason}`),
+      {
+        status: 400,
+        apiCode: "INVALID_REPO",
+        hint: check.fix
+          ? `To repair it, run this in the folder: ${check.fix}`
+          : "Choose a folder that contains a working Git repository.",
+      },
+    );
 }
 interface Registry {
   display_name: string | null;
@@ -38,6 +79,9 @@ export class Projects {
     Promise<{ currentUserEmail?: string; currentUserName?: string }>
   >();
   private opening = new Map<string, ReturnType<typeof openProject>>();
+  /** Last computed row per project, served first by cachedList (stale-while-revalidate). */
+  private rows = new Map<string, ProjectRow>();
+  private refreshing?: Promise<ProjectRow[]>;
   private stores = new Map<string, Awaited<ReturnType<typeof openProject>>>();
   constructor(
     readonly db: Database.Database,
@@ -50,13 +94,13 @@ export class Projects {
     return this.db.prepare("SELECT * FROM tracked_dirs").all() as TrackedDir[];
   }
   async close() {
+    await this.refreshing?.catch(() => {});
     for (const s of this.stores.values()) await s.close();
     this.stores.clear();
   }
   get(id: string) {
     const row = this.db.prepare("SELECT * FROM projects WHERE id=?").get(id) as
-      | Registry
-      | undefined;
+      Registry | undefined;
     if (!row) throw Object.assign(Error("Project not found"), { status: 404 });
     return row;
   }
@@ -115,10 +159,33 @@ export class Projects {
     const safe = await this.explicitRoot(root);
     await this.refreshMissing();
     const paths = await discover(safe, depth);
+    // Git/metadata reads run in parallel (bounded); registry matching below stays serial.
+    const probes = await mapLimit(paths, GIT_CONCURRENCY, async (p) => {
+      const check = await validateRepo(p);
+      return check.valid
+        ? { p, check, git: await info(p), meta: await readMetadata(p) }
+        : { p, check };
+    });
     const result: DiscoveredRepo[] = [];
-    for (const p of paths) {
-      const git = await info(p);
-      const meta = await readMetadata(p);
+    for (const { p, check, ...probe } of probes) {
+      if (!check.valid) {
+        result.push({
+          branch: "",
+          head: "",
+          remoteUrl: null,
+          rootCommit: "",
+          lastCommitAt: null,
+          path: p,
+          name: path.basename(p),
+          tracked: this.registry().some((r) => r.path === p),
+          invalid: true,
+          reason: check.reason,
+          fix: check.fix,
+        });
+        continue;
+      }
+      const git = probe.git!,
+        meta = probe.meta ?? null;
       const match = this.registry().find(
         (r) =>
           r.path === p ||
@@ -172,9 +239,9 @@ export class Projects {
   async track(paths: string[]) {
     for (const input of paths) {
       const p = await this.safe(input);
-      if (!(await fs.lstat(path.join(p, ".git"))))
-        throw Error("Choose a Git repository root");
       if (this.registry().some((r) => r.path === p)) continue;
+      // Validate before openProject: a failed track must not leave .bip/ or exclude edits behind.
+      await assertRepo(p);
       const s = await openProject(p);
       if (this.registry().some((r) => r.id === s.project.id)) {
         await s.close();
@@ -206,6 +273,7 @@ export class Projects {
   async locate(id: string, input: string) {
     const r = this.get(id);
     const p = await this.safe(input);
+    await assertRepo(p);
     const git = await info(p);
     const meta = await readMetadata(p);
     if (meta && meta.id !== id)
@@ -235,6 +303,7 @@ export class Projects {
     await this.stores.get(id)?.close();
     this.stores.delete(id);
     this.db.prepare("DELETE FROM projects WHERE id=?").run(id);
+    this.rows.delete(id);
   }
   async deleteData(id: string, confirmName: string) {
     const s = await this.store(id);
@@ -246,6 +315,11 @@ export class Projects {
     await fs.rm(root, { recursive: true });
   }
   async row(id: string): Promise<ProjectRow> {
+    const row = await this.computeRow(id);
+    if (this.registry().some((r) => r.id === id)) this.rows.set(id, row);
+    return row;
+  }
+  private async computeRow(id: string): Promise<ProjectRow> {
     const r = this.get(id);
     if (r.status === "missing")
       return {
@@ -317,11 +391,54 @@ export class Projects {
       bipSize: await folderSize(s.root),
     } as ProjectRow;
   }
+  /** Fresh rows for every tracked project (git calls bounded by GIT_CONCURRENCY). */
   async list() {
     await this.refreshMissing();
-    return (await Promise.all(this.registry().map((r) => this.row(r.id)))).sort(
-      (a, b) =>
-        b.unsharedCount - a.unsharedCount || a.name.localeCompare(b.name),
+    // Reuse a background refresh that is already running instead of duplicating its git calls.
+    const inflight = this.refreshing
+      ? await this.refreshing.catch(() => [] as ProjectRow[])
+      : [];
+    const done = new Map(inflight.map((r) => [r.id, r]));
+    return (
+      await mapLimit(
+        this.registry(),
+        GIT_CONCURRENCY,
+        async (r) => done.get(r.id) ?? this.row(r.id),
+      )
+    ).sort(byUnshared);
+  }
+  /** Recomputes every row in the background; concurrent callers share one run. */
+  refresh() {
+    this.refreshing ??= (async () => {
+      try {
+        await this.refreshMissing();
+        const rows = await mapLimit(this.registry(), GIT_CONCURRENCY, (r) =>
+          this.row(r.id),
+        );
+        return rows;
+      } finally {
+        this.refreshing = undefined;
+      }
+    })();
+    return this.refreshing;
+  }
+  /**
+   * Stale-while-revalidate: returns the cached rows immediately (stale: true) and starts a
+   * background refresh. Falls back to a fresh list when any tracked project has no cached row.
+   */
+  async cachedList(): Promise<{ rows: ProjectRow[]; stale: boolean }> {
+    await this.refreshMissing();
+    const registry = this.registry();
+    if (!registry.every((r) => r.status === "missing" || this.rows.has(r.id)))
+      return { rows: await this.list(), stale: false };
+    void this.refresh().catch(() => {});
+    const rows = await Promise.all(
+      registry.map((r) =>
+        r.status === "missing"
+          ? this.computeRow(r.id)
+          : { ...this.rows.get(r.id)!, status: r.status },
+      ),
     );
+    return { rows: rows.sort(byUnshared), stale: true };
   }
 }

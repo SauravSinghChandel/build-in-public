@@ -1,10 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium, type Page } from "playwright";
+import {
+  chromium,
+  type Browser,
+  type LaunchOptions,
+  type Page,
+} from "playwright";
 import { VideoCaptureInput, type CaptureStep } from "@bip/shared";
 import { z } from "zod";
 import { browserPath, command } from "./process.js";
 import { captureQuality, type EventLog } from "./model.js";
+import { friendlyNavigationError, runStep } from "../capture/errors.js";
 export async function executeStep(page: Page, s: z.infer<typeof CaptureStep>) {
   if (s.action === "pause" || s.action === "wait")
     await page.waitForTimeout(s.ms ?? 1000);
@@ -18,23 +24,89 @@ export async function executeStep(page: Page, s: z.infer<typeof CaptureStep>) {
         .locator(s.selector)
         .evaluate((e, value) => e.scrollBy(0, value), Number(s.value ?? 500));
     else await page.mouse.wheel(0, Number(s.value ?? 500));
-  } else if (s.action === "scrollTo")
-    await page.evaluate(async ({ selector, y, durationMs }) => {
-      const el = selector ? document.querySelector(selector) : null;
-      if (selector && !el) throw Error("Scroll selector not found");
-      const target = el ? el.getBoundingClientRect().top + scrollY : y!,
-        start = scrollY,
-        base = performance.now();
-      await new Promise<void>((resolve) => {
-        function frame(now: number) {
-          const t = Math.min(1, (now - base) / durationMs!);
-          window.scrollTo(0, start + (target - start) * (t * t * (3 - 2 * t)));
-          if (t < 1) requestAnimationFrame(frame);
-          else resolve();
-        }
-        requestAnimationFrame(frame);
-      });
-    }, s);
+  } else if (s.action === "scrollTo") {
+    // Selectors may use Playwright engines (role=, text=), so resolve them with a locator.
+    const y = s.selector
+      ? await page
+          .locator(s.selector)
+          .evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
+      : s.y!;
+    await page.evaluate(
+      async ({ target, durationMs }) => {
+        const start = scrollY,
+          base = performance.now();
+        await new Promise<void>((resolve) => {
+          function frame(now: number) {
+            const t = Math.min(1, (now - base) / durationMs);
+            window.scrollTo(
+              0,
+              start + (target - start) * (t * t * (3 - 2 * t)),
+            );
+            if (t < 1) requestAnimationFrame(frame);
+            else resolve();
+          }
+          requestAnimationFrame(frame);
+        });
+      },
+      { target: y, durationMs: s.durationMs! },
+    );
+  }
+}
+/**
+ * Chromium flags for the capture browser. Measured on a WebGL raymarching fixture at 1440×900
+ * (M5 §0.8): default SwiftShader 3.6 fps / 325 ms max gap; explicit SwiftShader 3.1 fps;
+ * --use-gl=egl broke the screencast (0.2 fps); hardware ANGLE/GL with these flags 59.6–59.8 fps,
+ * ~20–32 ms max gap. Capping the screencast below the target size did not help (3.2 fps).
+ */
+export const GPU_CAPTURE_ARGS = [
+  "--use-angle=gl",
+  "--ignore-gpu-blocklist",
+  "--enable-gpu-rasterization",
+];
+export const isHardwareRenderer = (renderer: string) =>
+  !!renderer &&
+  !/swiftshader|llvmpipe|softpipe|software|subzero/i.test(renderer);
+let gpuUsable: boolean | undefined;
+async function webglRenderer(browser: Browser) {
+  const page = await browser.newPage();
+  try {
+    return await page.evaluate(() => {
+      const gl = document.createElement("canvas").getContext("webgl");
+      if (!gl) return "";
+      const info = gl.getExtension("WEBGL_debug_renderer_info");
+      return String(
+        gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER),
+      );
+    });
+  } finally {
+    await page.close();
+  }
+}
+/**
+ * Launches the capture browser on the hardware GPU when one works, otherwise falls back to
+ * Chromium's defaults (software WebGL). The probe result is cached for the process.
+ * Set BIP_CAPTURE_GPU=0 to force the default path.
+ */
+export async function launchCaptureBrowser(options: LaunchOptions) {
+  if (gpuUsable !== false && process.env.BIP_CAPTURE_GPU !== "0") {
+    const browser = await chromium
+      .launch({
+        ...options,
+        args: [...(options.args || []), ...GPU_CAPTURE_ARGS],
+      })
+      .catch(() => null);
+    if (browser) {
+      const renderer = await webglRenderer(browser).catch(() => "");
+      if (isHardwareRenderer(renderer)) {
+        gpuUsable = true;
+        return { browser, renderer };
+      }
+      await browser.close();
+    }
+    gpuUsable = false;
+  }
+  const browser = await chromium.launch(options);
+  return { browser, renderer: await webglRenderer(browser).catch(() => "") };
 }
 export async function captureDemo(
   input: z.infer<typeof VideoCaptureInput>,
@@ -45,7 +117,7 @@ export async function captureDemo(
   await fs.mkdir(dir, { recursive: true });
   const configDir = path.join(dir, "browser-config");
   await fs.mkdir(configDir, { recursive: true });
-  const browser = await chromium.launch({
+  const { browser, renderer } = await launchCaptureBrowser({
     executablePath: browserPath(),
     chromiumSandbox: false,
     env: { ...process.env, XDG_CONFIG_HOME: configDir },
@@ -94,7 +166,11 @@ export async function captureDemo(
         document.head.append(style);
       });
     });
-    await page.goto(input.url, { waitUntil: "networkidle", timeout: 30000 });
+    await page
+      .goto(input.url, { waitUntil: "networkidle", timeout: 30000 })
+      .catch((e) => {
+        throw friendlyNavigationError(input.url, e);
+      });
     await page.evaluate(() => document.fonts.ready);
     const cdp = await context.newCDPSession(page),
       pending: Promise<unknown>[] = [];
@@ -125,11 +201,11 @@ export async function captureDemo(
       everyNthFrame: 1,
     });
     const now = () => (Date.now() - base) / 1000;
-    for (const s of input.steps) {
+    for (const [i, s] of input.steps.entries()) {
       signal.throwIfAborted();
       const action = { label: s.action, t: now(), endT: 0 };
       log.actions.push(action);
-      await executeStep(page, s);
+      await runStep(i, s, () => executeStep(page, s), signal);
       action.endT = now();
     }
     await page.waitForTimeout(100);
@@ -176,6 +252,7 @@ export async function captureDemo(
     return {
       file,
       log,
+      renderer,
       quality: captureQuality(
         log.frames.map((f) => f.t),
         log.duration * 1000,

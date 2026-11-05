@@ -147,6 +147,11 @@ export interface DiscoveredRepo extends GitInfo {
   path: string;
   name: string;
   tracked: boolean;
+  /** Set when the folder has a .git entry Git cannot use. */
+  invalid?: boolean;
+  reason?: string;
+  /** A copyable shell command that would repair the repository; never run by BIP. */
+  fix?: string;
 }
 export interface AgentStatus {
   id: string;
@@ -518,4 +523,36 @@ export interface VideoView {
   revisions: VideoRevision[];
   clicks: { t: number; x: number; y: number }[];
   choppy: boolean;
+}
+
+/** Result of dry-running one generated step's selector against the live page. */
+export interface StepCheck {
+  status: "ok" | "missing" | "ambiguous" | "invalid" | "none";
+  count?: number;
+  message?: string;
+}
+export interface PageElement {
+  role: string;
+  name: string;
+  text?: string;
+  href?: string;
+  selector: string;
+}
+/** Separates a friendly job error from its raw log (shown behind a "Details" toggle). */
+export const ERROR_DETAILS = "\n\n--- Details ---\n";
+// eslint-disable-next-line no-control-regex
+const ansi =
+  /[\u001b\u009b](?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\-_])/g;
+export function stripAnsi(text: string) {
+  return text.replace(ansi, "");
+}
+export function splitJobError(error: string | null | undefined) {
+  if (!error) return { message: "", details: "" };
+  const at = error.indexOf(ERROR_DETAILS);
+  return at < 0
+    ? { message: error, details: "" }
+    : {
+        message: error.slice(0, at),
+        details: error.slice(at + ERROR_DETAILS.length),
+      };
 }
