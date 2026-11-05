@@ -4,6 +4,14 @@ You are implementing milestone **M5** of Build in Public (BIP) on top of M1–M4
 
 Worktree/branch: see "Environment" at the end. **Do not commit or push.** Don't edit `docs/plan.md` or `spikes/`. **Never make real calls to X or LinkedIn in tests**: use a local mock server for both APIs (base URLs are configurable).
 
+
+## 0. First: fixes from the M3 (and M4) live reviews
+1. **Page-aware step generation:** "Describe steps"/"Describe the demo" currently lets agents guess selectors without seeing the page (both Claude and Codex guessed wrong). First load the URL in Playwright, extract a compact element map (role, accessible name, visible text, href, and a robust Playwright selector such as `role=button[name="Simple"]` or `text=Switch to Simple mode`, deduplicated, ≤ 150 entries), and pass it to the agent. Steps must use selectors from the map. Validate each generated step against the live page (dry run: locator count === 1) before showing it for approval, and mark ambiguous or missing ones.
+2. **Friendly capture/record errors:** strip ANSI codes. Map Playwright timeouts/strict-mode violations to "Step 2: couldn't find `<selector>`" / "Step 2: `<selector>` matches 3 elements. Make it more specific." Keep the raw log behind a "Details" toggle.
+3. **Slow first load:** "Loading workspace…" shows for 1–2 s on every full page load. Profile it. Likely the projects list blocks on git calls for every repo: serve the cached rows first, then refresh in the background (stale-while-revalidate), and parallelise git calls with a concurrency limit.
+4. Image Studio polish: slot textareas use the mono font (use Plex Sans; only code/paths are mono); the accent colour input renders as a blank line (show a swatch + hex input); the revision 1 thumbnail is empty (render it on create); the New image dialog lists screenshots by hash (show thumbnails with capture URL/date, and preset thumbnails like the studio's preset picker).
+5. Agent jobs that take > 20 s show only a static status. Stream the agent's partial text/tool activity into the job line ("Reading styles.css…", "Editing index.html…") where the CLI emits it.
+
 ## 1. Accounts (user's own developer apps)
 - Settings → Accounts. For each platform there's a short setup guide (create your own developer app; the exact redirect URI to register: `http://127.0.0.1:<port>/oauth/<platform>/callback`; required scopes), fields for Client ID (and Client Secret where the platform requires one), and "Connect".
   - X: OAuth 2.0 Authorization Code with **PKCE**; scopes `tweet.read tweet.write users.read media.write offline.access`. The guide notes the pay-per-use pricing (≈ $0.015 per post; posts with a URL cost far more, reportedly ≈ $0.20) and links to X's pricing page. Prices aren't hard-coded anywhere else.
