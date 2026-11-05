@@ -5,6 +5,8 @@ import { z } from "zod";
 import { configPath } from "./paths.js";
 import { atomicJsonWrite } from "./bip/store.js";
 const Config = z.strictObject({
+  claudeBin: z.string().default("claude"),
+  codexBin: z.string().default("codex"),
   port: z.number().int().min(1).max(65535).default(4310),
 });
 export function readConfig() {
@@ -35,3 +37,5 @@ export function appPort() {
     .max(65535)
     .parse(process.env.BIP_PORT || readConfig().port);
 }
+
+export function binaryFor(id: "claude" | "codex") { return process.env[id === "claude" ? "BIP_CLAUDE_BIN" : "BIP_CODEX_BIN"] || readConfig()[id === "claude" ? "claudeBin" : "codexBin"]; }

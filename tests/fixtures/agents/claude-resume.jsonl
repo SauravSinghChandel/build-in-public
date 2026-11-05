@@ -1,0 +1,4 @@
+{"type": "system", "subtype": "init", "session_id": "93bb53fe-43d2-463e-abee-9237346940e3"}
+{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "StructuredOutput", "id": "toolu_016amgTcGqAJcCsm1TAwH2W2", "input": {"name": "Canary Harbor"}}]}}
+{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": null, "id": "toolu_016amgTcGqAJcCsm1TAwH2W2", "input": null}]}}
+{"type": "result", "subtype": "success", "is_error": false, "session_id": "93bb53fe-43d2-463e-abee-9237346940e3", "structured_output": {"name": "Canary Harbor"}, "total_cost_usd": 0.2635762}

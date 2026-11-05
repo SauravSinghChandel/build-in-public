@@ -69,3 +69,8 @@ Do these before adding M2 features:
 7. The brand "Build in Public" wraps onto 2 lines in the rail. Keep it on one line (14/600) or shrink the rail padding.
 8. Replace the native `<datalist>` folder autocomplete (an unstyled ▼, popups invisible in some browsers) with a styled combobox: a popover list under the input, arrow-key navigation, Tab to complete. A prefix of `~` or `~/` lists the home folder's children instead of returning 400.
 9. Toast copy: "Shared marker updated" → "Marked as shared". Command hints in Settings → Agents render commands in mono (`claude`, `codex login`).
+
+## Environment
+- Worktree `/home/justbuster/projects/build-in-public-m2`, branch `m2-post-studio` (already checked out). Install with `npx --yes pnpm@10.34.9 install`.
+- Same notes as M1: `tsx`/`tsc` (system Node has no TS stripping), cached Playwright Chromium, `chromiumSandbox: false` in test config if needed.
+- Real agent CLIs can't run inside your sandbox (their config dirs are read-only). Use the fake-agent overrides for all tests. The reviewer will run a live smoke test with the real CLIs afterwards, so make sure `BIP_CLAUDE_BIN`/`BIP_CODEX_BIN` unset = the real `claude`/`codex` on PATH.

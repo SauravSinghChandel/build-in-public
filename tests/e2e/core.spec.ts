@@ -44,6 +44,9 @@ test.beforeAll(async () => {
       BIP_NO_OPEN: "1",
       NODE_ENV: "production",
       BIP_DEV_NO_AUTH: "0",
+      BIP_CLAUDE_BIN: path.resolve("tests/fixtures/agents/fake.mjs"),
+      BIP_CODEX_BIN: path.resolve("tests/fixtures/agents/fake.mjs"),
+      BIP_FAKE_MODE: "success",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -127,7 +130,7 @@ test("foundation core loop: discover, track, timeline, share, context, appearanc
     .check();
   await expect(
     page.getByRole("button", { name: "Create story from 1 commit" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(page.getByText("alpha change 5", { exact: true })).toBeVisible();
   await page

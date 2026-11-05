@@ -5,23 +5,25 @@ import path from "node:path";
 import net from "node:net";
 import { chromium } from "playwright";
 import type { AgentStatus, Check, DoctorReport } from "@bip/shared";
+import { binaryFor } from "./config.js";
 const exec = promisify(execFile);
 export async function agents(): Promise<AgentStatus[]> {
   return Promise.all(
     ["claude", "codex"].map(async (id) => {
       try {
         const version = (
-          await exec(id, ["--version"], { timeout: 10000 })
+          await exec(binaryFor(id as "claude" | "codex"), ["--version"], { timeout: 10000 })
         ).stdout.trim();
         let auth: AgentStatus["auth"] = "unknown";
         if (id === "codex") {
-          auth = await exec(id, ["login", "status"], { timeout: 10000 })
+          auth = await exec(binaryFor(id as "claude" | "codex"), ["login", "status"], { timeout: 10000 })
             .then(() => "signed in" as const)
             .catch(() => "not signed in" as const);
         }
         return {
           id,
           installed: true,
+          usable: auth !== "not signed in",
           version,
           auth,
           hint:
@@ -33,6 +35,7 @@ export async function agents(): Promise<AgentStatus[]> {
         return {
           id,
           installed: false,
+          usable: false,
           auth: "unknown",
           hint: `Install ${id}, then sign in in a terminal`,
         };

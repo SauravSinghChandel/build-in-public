@@ -1,0 +1,47 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`agent adapters > snapshots isolated argv for claude, including resume 1`] = `
+[
+  "-p",
+  "--output-format",
+  "stream-json",
+  "--verbose",
+  "--json-schema",
+  "{"type":"object"}",
+  "--permission-mode",
+  "dontAsk",
+  "--allowedTools",
+  "Read,Grep,Glob",
+  "--add-dir",
+  "/tracked/repo",
+  "--strict-mcp-config",
+  "--setting-sources",
+  "user",
+  "--max-budget-usd",
+  "1",
+  "--resume",
+  "session-1",
+  "--",
+  "untrusted text",
+]
+`;
+
+exports[`agent adapters > snapshots isolated argv for codex, including resume 1`] = `
+[
+  "exec",
+  "--json",
+  "--output-schema",
+  "/fresh/workspace/schema.json",
+  "-s",
+  "read-only",
+  "-C",
+  "/fresh/workspace",
+  "--add-dir",
+  "/tracked/repo",
+  "--skip-git-repo-check",
+  "resume",
+  "session-1",
+  "--",
+  "untrusted text",
+]
+`;

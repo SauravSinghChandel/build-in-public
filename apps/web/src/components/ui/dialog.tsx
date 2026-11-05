@@ -1,5 +1,5 @@
-import { Dialog as Primitive } from "radix-ui";
 import { X } from "lucide-react";
+import { Dialog as Primitive } from "radix-ui";
 import type { ReactNode } from "react";
 export function Dialog({
   open,
@@ -7,18 +7,20 @@ export function Dialog({
   title,
   description,
   children,
+  sheet = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   title: string;
   description?: string;
   children: ReactNode;
+  sheet?: boolean;
 }) {
   return (
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
       <Primitive.Portal>
         <Primitive.Overlay className="overlay" />
-        <Primitive.Content className="dialog">
+        <Primitive.Content className={sheet ? "dialog sheet" : "dialog"}>
           <Primitive.Title>{title}</Primitive.Title>
           <Primitive.Description className={description ? "muted" : "sr-only"}>
             {description || title}

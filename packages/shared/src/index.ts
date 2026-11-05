@@ -13,6 +13,8 @@ export const Project = z.strictObject({
   commitContext: z.boolean(),
   settings: z.strictObject({
     tone: z.string().optional(),
+    allowEmoji: z.boolean().optional(),
+    lastAgent: z.record(z.string(), z.enum(["claude", "codex"])).optional(),
     audience: z.string().optional(),
     defaultPlatforms: z.array(platform).optional(),
   }),
@@ -25,6 +27,8 @@ export const Story = z.strictObject({
   status: z.enum(["idea", "drafting", "ready", "published", "archived"]),
   commitRange: z.strictObject({ from: z.string(), to: z.string() }).optional(),
   compositionIds: z.array(z.string()),
+  selectedCommits: z.array(z.string()).optional(),
+  angle: z.string().optional(),
   createdAt: stamp,
   updatedAt: stamp,
 });
@@ -70,6 +74,10 @@ export const Revision = z.strictObject({
   author: z.enum(["user", "agent"]),
   agentRunId: z.string().optional(),
   createdAt: stamp,
+  editedAt: stamp.optional(),
+  coalescesRevisionId: id.optional(),
+  claims: z.array(z.string()).optional(),
+  highlights: z.array(z.string()).optional(),
 });
 
 export const ScanInput = z.strictObject({
@@ -123,9 +131,10 @@ export interface ProjectRow
   path: string;
   status: "active" | "missing" | "archived";
   currentUserEmail?: string;
+  currentUserName?: string;
   unsharedCount: number;
   markerLost: boolean;
-  lastPostAt: null;
+  lastPostAt: string | null;
   readOnly: boolean;
   bipSize: number;
 }
@@ -146,6 +155,7 @@ export interface AgentStatus {
   version?: string;
   auth: "signed in" | "not signed in" | "unknown";
   hint: string;
+  usable?: boolean;
 }
 export interface Check {
   name: string;
@@ -157,4 +167,97 @@ export interface DoctorReport {
   checks: Check[];
   dataPath: string;
   backups: string[];
+}
+
+export type StoryData = z.infer<typeof Story>;
+export type PostData = z.infer<typeof Post>;
+export type RevisionData = z.infer<typeof Revision>;
+export const Angle = z.strictObject({
+  title: z.string(),
+  hook: z.string(),
+  why_interesting: z.string(),
+  commits: z.array(z.string()),
+});
+export const Angles = z.strictObject({ angles: z.array(Angle).length(3) });
+export const Draft = z.strictObject({
+  x: z.strictObject({ parts: z.array(z.string()).min(1).max(4) }),
+  linkedin: z.strictObject({ text: z.string() }),
+  highlights: z.array(z.string()),
+  claims_to_verify: z.array(z.string()),
+});
+export function editSchema(platform: "x" | "linkedin") {
+  return Draft.pick(
+    platform === "x"
+      ? { x: true, highlights: true, claims_to_verify: true }
+      : { linkedin: true, highlights: true, claims_to_verify: true },
+  );
+}
+export function textLength(text: string, platform: "x" | "linkedin") {
+  return [
+    ...(platform === "x"
+      ? text.replace(/https?:\/\/[^\s]+/gi, "x".repeat(23))
+      : text),
+  ].length;
+}
+export function validateParts(parts: string[], platform: "x" | "linkedin") {
+  const warnings: string[] = [];
+  if (platform === "x" && parts.length > 4)
+    warnings.push("X threads have at most 4 parts");
+  parts.forEach((text, i) => {
+    const n = textLength(text, platform);
+    if (platform === "x" ? n > 280 : n < 600 || n > 1200)
+      warnings.push(
+        `${platform === "x" ? `Part ${i + 1}` : "LinkedIn"}: ${n} characters. ${n > (platform === "x" ? 280 : 1200) ? "Shorten" : "Expand"} suggested`,
+      );
+    if ((text.match(/#[\p{L}\p{N}_]+/gu) || []).length > 1)
+      warnings.push("Use at most one hashtag");
+  });
+  return warnings;
+}
+export function publishUrl(value: string, platform: "x" | "linkedin") {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      (platform === "x"
+        ? ["x.com", "www.x.com", "twitter.com", "www.twitter.com"]
+        : ["linkedin.com", "www.linkedin.com"]
+      ).includes(url.hostname) &&
+      url.pathname !== "/"
+    );
+  } catch {
+    return false;
+  }
+}
+export function intentUrl(parts: string[], platform: "x" | "linkedin") {
+  const encoded = encodeURIComponent(parts[0] || "");
+  if (platform === "x") return `https://x.com/intent/post?text=${encoded}`;
+  const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encoded}`;
+  return url.length > 2000 ? "https://www.linkedin.com/feed/" : url;
+}
+export interface PostView {
+  post: PostData;
+  revisions: RevisionData[];
+  warnings: string[];
+  claims: string[];
+  highlights: string[];
+}
+export interface StoryView {
+  story: StoryData;
+  posts: PostView[];
+}
+export interface JobView {
+  id: string;
+  type: string;
+  status: string;
+  project_id: string;
+  resource_key: string;
+  payload: Record<string, any>;
+  result: any;
+  error: string | null;
+  created_at: string;
+  started_at: string;
+  partial?: string;
 }
