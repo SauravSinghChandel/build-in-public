@@ -31,3 +31,7 @@ Worktree `build-in-public-m5`, branch `m5-publishing`. Nothing committed or push
 - The GPU path depends on host drivers. CI or headless servers fall back to software WebGL, where heavy pages remain choppy and are flagged.
 - `fitTitle` uses an ASCII width table; other characters get a conservative estimate, with `overflow-wrap:anywhere` as a backstop.
 - Real Claude/Codex smoke testing is still left for the reviewer.
+
+## Reviewer live test (2026-11-05, merged M5a+M5b)
+- Merge conflicts in `apps/server/src/index.ts` and `apps/web/src/style.css` resolved (kept both sides; fixed a dropped `}`). 124 unit tests + 5 e2e pass on the combined code.
+- Live: an empty `.git` + `.git-local` repo is flagged invalid in the scan, tracking returns `INVALID_REPO` with the gitfile hint, and nothing is written. Claude page-aware steps produced `role=link[name="Simple"]` (validated count 1) and the capture with it succeeded. A bad selector reads "Step 1: couldn't find `#nope`."
