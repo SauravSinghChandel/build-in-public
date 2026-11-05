@@ -1,7 +1,7 @@
-import * as React from "react";
-import { Slot } from "radix-ui";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
+import { Slot } from "radix-ui";
+import * as React from "react";
 import { twMerge } from "tailwind-merge";
 export function cn(...values: Parameters<typeof clsx>) {
   return twMerge(clsx(values));
@@ -10,7 +10,7 @@ const variants = cva("button", {
   variants: {
     variant: {
       default: "primary",
-      outline: "outline",
+      outline: "secondary",
       ghost: "ghost",
       destructive: "destructive",
     },

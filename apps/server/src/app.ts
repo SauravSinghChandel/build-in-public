@@ -22,6 +22,8 @@ import { directorySuggestions, dataHome } from "./paths.js";
 import { log, git } from "./git.js";
 import { backup } from "./backup.js";
 import { agents, doctor } from "./doctor.js";
+import { Content } from "./content.js";
+import { contentRoutes } from "./content-routes.js";
 export function createApp(
   options: {
     home?: string;
@@ -209,6 +211,9 @@ export function createApp(
     ),
   );
   app.get("/api/agents/status", async (c) => c.json(await agents()));
+  const content = new Content(projects, db, home);
+  contentRoutes(app, content);
+  app.get("/api/fs/home", c => c.json({home: options.fsHome || os.homedir()}));
   app.all("/api/*", (c) =>
     c.json(error("NOT_FOUND", "API route not found"), 404),
   );
@@ -220,8 +225,10 @@ export function createApp(
     token,
     port,
     projects,
+    content,
     db,
     async close() {
+      await content.jobs.close();
       await projects.close();
       db.close();
     },

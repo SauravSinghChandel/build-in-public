@@ -36,6 +36,33 @@ Autocomplete and newly selected folders are restricted to HOME. Canonical tracke
 
 ## Client
 
-TanStack Router owns page navigation; TanStack Query owns API caching. Owned shadcn-style components use Radix for dialogs, menus, switches and tooltips, plus cmdk for command search. The graphite/amber CSS tokens implement `docs/design.md`, with self-hosted IBM Plex, light/dark/system modes and reduced-motion handling. The timeline supports paging, expanded file lists, shift selection and shared markers. Story creation remains disabled until M2. Context writes are serialized after 800 ms idle, flushed when leaving the tab, and reflected in the query cache.
+TanStack Router owns page navigation; TanStack Query owns API caching. Owned shadcn-style components use Radix for dialogs, menus, switches and tooltips, plus cmdk for command search. The graphite/amber CSS tokens implement `docs/design.md`, with self-hosted IBM Plex, light/dark/system modes and reduced-motion handling. The timeline supports paging, expanded file lists, shift selection and shared markers. M2 enables story creation from commit selection. Context writes are serialized after 800 ms idle, flushed when leaving the tab, and reflected in the query cache.
 
 All tests create disposable repositories under the OS temporary directory. The single Playwright core-loop test launches the compiled production server with a temporary HOME/BIP_HOME, exchanges the real token, and cleans up its process and fixtures. It never scans or modifies the user's project folders.
+
+## M2 Post Studio
+
+`agents/` ports M0's process harness with fresh per-job working directories, closed stdin,
+read-only tools/sandbox, environment/config binary selection, JSONL normalization, persisted
+session IDs, costs and raw logs. Writing tasks receive a redacted context bundle only;
+summary tasks additionally receive the repository through `--add-dir`. No repository is a CLI cwd.
+
+`jobs/runner.ts` uses SQLite as the durable queue and runs at most two jobs, excluding
+concurrent resource keys. Startup changes running jobs to interrupted. Resume reuses the
+last stored session for that job; independent edit actions always start new sessions.
+Cookie-authenticated SSE carries a bounded 300-event replay ring. On reconnect the client
+also refreshes persisted jobs, including after a server restart resets the event sequence.
+Shutdown closes SSE sockets before waiting for agent cancellation and store cleanup.
+
+Content stays in the M1 store. Revisions include claims/highlights. Manual edit snapshots
+append to JSONL; snapshots within 60 seconds fold into one logical timeline revision,
+with a fresh revision ID and an explicit coalescing pointer. Restore always appends.
+Approval checks the current revision and rejects secret matches, unchecked claims, or
+unacknowledged private-term warnings. Changes invalidate approval. Publish recording
+requires approval and a matching HTTPS platform URL. The first published post of a story
+advances its marker only under an atomic store lock and a successful ancestor check.
+
+The browser has routed project tabs and feature modules, an angle sheet, a two-platform
+editor, a revision diff preview, and an assisted publish sheet. It only copies text and
+opens platform URLs; it contains no social-platform posting integration. Regex secret
+scanning is best-effort and cannot establish factual accuracy or absence of secrets.

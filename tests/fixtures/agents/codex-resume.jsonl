@@ -1,0 +1,3 @@
+{"type": "thread.started", "thread_id": "01a1a82e-a132-7e13-b254-fc2ae9ffa1e0"}
+{"type": "item.completed", "item": {"type": "agent_message", "text": "{\"name\":\"Canary Harbor\"}"}}
+{"type": "turn.completed", "usage": {"input_tokens": 55882, "cached_input_tokens": 17408, "cache_write_input_tokens": 0, "output_tokens": 255, "reasoning_output_tokens": 104}}

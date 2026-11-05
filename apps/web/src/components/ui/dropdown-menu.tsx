@@ -1,5 +1,5 @@
-import { DropdownMenu as Menu } from "radix-ui";
 import { MoreHorizontal } from "lucide-react";
+import { DropdownMenu as Menu } from "radix-ui";
 export function CommitMenu({ onMark }: { onMark: () => void }) {
   return (
     <Menu.Root>

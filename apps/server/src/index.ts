@@ -26,6 +26,9 @@ export async function start() {
     server.close(() => {
       void service.close().then(() => process.exit(0));
     });
+    // EventSource connections stay open for the lifetime of the browser tab.
+    // End those sockets so shutdown can reach agent cancellation and store cleanup.
+    if ("closeAllConnections" in server) server.closeAllConnections();
   };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);

@@ -315,7 +315,17 @@ export async function openProject(repoPath: string) {
       const lines = bytes.split("\n");
       const tail = lines.pop()!;
       // Only newline-terminated records are committed; even a parseable tail is torn.
-      const revisions = lines.map((line) => Revision.parse(JSON.parse(line)));
+      // Manual edit snapshots remain append-only on disk. The timeline folds each
+      // coalesced snapshot into the logical revision it supersedes.
+      const revisions: z.infer<typeof Revision>[] = [];
+      for (const line of lines) {
+        const next = Revision.parse(JSON.parse(line));
+        const previous = next.coalescesRevisionId
+          ? revisions.findIndex((r) => r.id === next.coalescesRevisionId)
+          : -1;
+        if (previous >= 0) revisions[previous] = next;
+        else revisions.push(next);
+      }
       return {
         revisions,
         tornTail: tail.length > 0,
@@ -347,6 +357,33 @@ export async function openProject(repoPath: string) {
           project = Project.parse({ ...project, ...input });
           await atomicJsonWrite(projectFile, project);
           return project;
+        });
+      },
+      async advanceShared(sha: string) {
+        return write(async () => {
+          if (!/^[a-f0-9]{40,64}$/.test(sha)) throw Error("Invalid marker");
+          if (project.lastSharedCommit) {
+            try {
+              await git(
+                repo,
+                "merge-base",
+                "--is-ancestor",
+                project.lastSharedCommit,
+                sha,
+              );
+            } catch {
+              return false;
+            }
+          }
+          project = Project.parse({
+            ...project,
+            lastSharedCommit: sha,
+            lastSharedDate: (
+              await git(repo, "show", "-s", "--format=%cI", sha)
+            ).trim(),
+          });
+          await atomicJsonWrite(projectFile, project);
+          return true;
         });
       },
       async readContext() {
@@ -388,6 +425,83 @@ export async function openProject(repoPath: string) {
           await atomicJsonWrite(file, story);
           return story;
         });
+      },
+      async readStory(storyId: string) {
+        return mutex(root, async () =>
+          read(await safe("stories", id.parse(storyId), "story.json"), Story),
+        );
+      },
+      async updateStory(
+        storyId: string,
+        input: Partial<z.infer<typeof Story>>,
+      ) {
+        return write(async () => {
+          const file = await safe("stories", id.parse(storyId), "story.json");
+          const current = await read(file, Story);
+          const next = Story.parse({
+            ...current,
+            ...input,
+            id: current.id,
+            updatedAt: new Date().toISOString(),
+          });
+          await atomicJsonWrite(file, next);
+          return next;
+        });
+      },
+      async listPosts(storyId: string) {
+        return mutex(root, async () => {
+          await read(
+            await safe("stories", id.parse(storyId), "story.json"),
+            Story,
+          );
+          const dir = await safe("stories", id.parse(storyId), "posts");
+          const entries = await fs.readdir(dir).catch((e) => {
+            if (!missing(e)) throw e;
+            return [];
+          });
+          return Promise.all(
+            entries.map(
+              async (entry) =>
+                (await migrateInternal(storyId, id.parse(entry))).post,
+            ),
+          );
+        });
+      },
+      async updatePost(
+        storyId: string,
+        postId: string,
+        input: Partial<z.infer<typeof Post>>,
+        expectedRevisionId?: string,
+      ) {
+        return write(async () => {
+          const current = (await migrateInternal(storyId, postId)).post;
+          if (
+            expectedRevisionId &&
+            current.currentRevisionId !== expectedRevisionId
+          )
+            throw Error("The post changed. Review its latest revision.");
+          const next = Post.parse({
+            ...current,
+            ...input,
+            id: current.id,
+            storyId: current.storyId,
+          });
+          await atomicJsonWrite(await postFile(storyId, postId), next);
+          return next;
+        });
+      },
+      async writeSummary(text: string) {
+        return write(async () =>
+          atomicWrite(await safe("auto-summary.md"), text),
+        );
+      },
+      async readSummary() {
+        return mutex(root, async () =>
+          fs.readFile(await safe("auto-summary.md"), "utf8").catch((e) => {
+            if (!missing(e)) throw e;
+            return "";
+          }),
+        );
       },
       async createPost(
         storyId: string,
@@ -456,18 +570,38 @@ export async function openProject(repoPath: string) {
           author: "user" | "agent";
           instruction?: string;
           agentRunId?: string;
+          claims?: string[];
+          highlights?: string[];
+          coalesce?: boolean;
         },
       ) {
         return write(async () => {
           const post = (await migrateInternal(storyId, postId)).post;
           if ((await revisionsInternal(storyId, postId)).tornTail)
             throw Error("Torn revision tail: recover before appending");
+          const previous = (await revisionsInternal(storyId, postId)).revisions;
+          const last = previous.at(-1);
+          const coalesce =
+            input.coalesce &&
+            input.author === "user" &&
+            !input.instruction &&
+            last?.author === "user" &&
+            !last.instruction &&
+            Date.now() - Date.parse(last.createdAt) < 60000 &&
+            last.id === post.currentRevisionId;
           const revision = Revision.parse({
-            ...input,
+            ...Object.fromEntries(
+              Object.entries(input).filter(([key]) => key !== "coalesce"),
+            ),
             schemaVersion: 1,
             id: randomUUID(),
             createdAt: new Date().toISOString(),
           });
+          if (coalesce) {
+            revision.createdAt = last!.createdAt;
+            revision.editedAt = new Date().toISOString();
+            revision.coalescesRevisionId = last!.id;
+          }
           const file = await postFile(storyId, postId, "revisions.jsonl");
           const fd = await fs.open(file, "a", 0o600);
           try {
@@ -480,8 +614,24 @@ export async function openProject(repoPath: string) {
           await atomicJsonWrite(await postFile(storyId, postId), {
             ...post,
             currentRevisionId: revision.id,
+            kind:
+              post.kind === "follow_up"
+                ? "follow_up"
+                : post.platform === "x" && input.parts.length > 1
+                  ? "thread"
+                  : "post",
             approvedRevisionId: undefined,
             status: "draft",
+          });
+          const storyPath = await safe(
+            "stories",
+            id.parse(storyId),
+            "story.json",
+          );
+          const story = await read(storyPath, Story);
+          await atomicJsonWrite(storyPath, {
+            ...story,
+            updatedAt: new Date().toISOString(),
           });
           return revision;
         });

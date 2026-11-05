@@ -33,6 +33,7 @@ interface Registry {
   added_at: string;
 }
 export class Projects {
+  private identities = new Map<string, Promise<{currentUserEmail?: string; currentUserName?: string}>>();
   private opening = new Map<string, ReturnType<typeof openProject>>();
   private stores = new Map<string, Awaited<ReturnType<typeof openProject>>>();
   constructor(
@@ -263,12 +264,13 @@ export class Projects {
       remoteUrl: git.remoteUrl || undefined,
       path: r.path,
       status: r.status,
-      currentUserEmail: await runGit(r.path, ["config", "user.email"])
-        .then((s) => s.trim())
-        .catch(() => undefined),
+      ...await (() => {
+        if (!this.identities.has(id)) this.identities.set(id, Promise.all(['user.email', 'user.name'].map(key => runGit(r.path, ['config', key]).then(s => s.trim()).catch(() => undefined))).then(([currentUserEmail, currentUserName]) => ({currentUserEmail, currentUserName})));
+        return this.identities.get(id)!;
+      })(),
       unsharedCount: count.count,
       markerLost: count.markerLost,
-      lastPostAt: null,
+      lastPostAt: (await Promise.all((await s.listStories()).map(story => s.listPosts(story.id)))).flat().map(post=>post.publishedAt||'').sort().at(-1)||null,
       readOnly: s.readOnly,
       bipSize: await folderSize(s.root),
     } as ProjectRow;
