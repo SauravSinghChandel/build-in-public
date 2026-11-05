@@ -15,7 +15,7 @@ import {
   type JobView,
 } from "@bip/shared";
 import type { Content } from "../content.js";
-import { agentSchema } from "../content.js";
+import { agentSchema, parseAgentOutput } from "../agents/schema.js";
 import { provider, type ProviderId } from "../agents/index.js";
 import { git } from "../git.js";
 import { atomicJsonWrite } from "../bip/store.js";
@@ -483,7 +483,7 @@ export class ImageStudio {
     if (signal.aborted) throw Error("Cancelled");
     if (!completed || errors.length)
       throw Error(errors.join("\n") || "Agent did not complete");
-    return schema.parse(result) as any;
+    return parseAgentOutput(schema, result) as any;
   }
   async run(
     job: JobView,
