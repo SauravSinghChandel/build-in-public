@@ -22,7 +22,16 @@ else if(prompt.includes('TASK: post.edit')) {
  output=prompt.includes('Edit only x.')?{x:{parts},highlights:[],claims_to_verify:[]}:{linkedin:{text:'I simplified the workflow around one repeated step.\n\n'+('The useful part was making the next action clear and keeping the work close to its context. '.repeat(8))},highlights:[],claims_to_verify:[]};
 }
 if(prompt.includes('TASK: post.draft')) { const recorded=fs.readFileSync(path.join(dir,`${provider}-draft.jsonl`),'utf8').trim().split('\n').map(JSON.parse); output=provider==='claude'?recorded.find(e=>e.type==='result').structured_output:JSON.parse(recorded.find(e=>e.type==='item.completed'&&e.item.type==='agent_message').item.text); }
-if(prompt.includes('TASK: image.edit')) {
+if(prompt.includes('TASK: video.edit')) {
+ const file=path.join(process.cwd(),'composition.json'),comp=JSON.parse(fs.readFileSync(file,'utf8'));
+ comp.scenes[0].endMs-=100;
+ for(const scene of comp.scenes.slice(1)){scene.startMs-=100;scene.endMs-=100;}
+ for(const caption of comp.captions){caption.startMs-=100;caption.endMs-=100;}
+ comp.durationMs-=100;fs.writeFileSync(file,JSON.stringify(comp,null,2));
+ if(prompt.includes('VIDEO_GSAP_FAIL'))fs.writeFileSync(path.join(process.cwd(),'motion.js'),'window.gsap.to("#root",{});');
+ output={done:true};
+} else if(prompt.includes('TASK: video.steps')) output={steps:[{action:'pause',ms:1000},{action:'click',selector:'#go'},{action:'pause',ms:2000}]};
+else if(prompt.includes('TASK: image.edit')) {
  const file=path.join(process.cwd(),'composition.json');
  const comp=JSON.parse(fs.readFileSync(file,'utf8'));
  comp.slots.headline='A headline from the fake agent';

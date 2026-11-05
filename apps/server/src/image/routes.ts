@@ -50,6 +50,34 @@ export function imageRoutes(app: Hono, studio: ImageStudio) {
       );
     c.header("Cache-Control", "public, max-age=31536000, immutable");
     c.header("X-Content-Type-Options", "nosniff");
+    if (item.mime.startsWith("video/")) {
+      c.header("Accept-Ranges", "bytes");
+      const range = c.req.header("range");
+      if (range) {
+        const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+        const start = match?.[1]
+          ? Number(match[1])
+          : match?.[2]
+            ? Math.max(0, bytes.length - Number(match[2]))
+            : NaN;
+        const end =
+          match?.[1] && match[2]
+            ? Math.min(bytes.length - 1, Number(match[2]))
+            : bytes.length - 1;
+        if (
+          !Number.isSafeInteger(start) ||
+          start < 0 ||
+          start >= bytes.length ||
+          end < start
+        ) {
+          c.header("Content-Range", `bytes */${bytes.length}`);
+          return c.body(null, 416);
+        }
+        c.header("Content-Range", `bytes ${start}-${end}/${bytes.length}`);
+        c.header("Content-Length", String(end - start + 1));
+        return c.body(new Uint8Array(bytes.subarray(start, end + 1)), 206);
+      }
+    }
     return c.body(new Uint8Array(bytes));
   });
   app.get(base + "/assets/:sha/thumbnail", async (c) => {

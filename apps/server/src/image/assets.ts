@@ -77,27 +77,40 @@ export class Assets {
     bytes: Buffer,
     kind: AssetData["kind"],
     provenance: AssetData["provenance"],
+    media?: {
+      mime: AssetData["mime"];
+      width: number;
+      height: number;
+      durationMs?: number;
+      hasAudio?: boolean;
+      quality?: AssetData["quality"];
+    },
   ) {
-    const mime = imageMime(bytes),
+    const mime = media?.mime || imageMime(bytes),
       sha = hash(bytes);
     // Decode using Chromium too: a matching signature alone is not a valid image.
-    const b = await chromium.launch({ chromiumSandbox: false });
+    const b = media
+      ? undefined
+      : await chromium.launch({ chromiumSandbox: false });
     let dimensions: { width: number; height: number };
     try {
-      const page = await b.newPage();
-      dimensions = await page.evaluate(
-        async ({ base64, mime }) => {
-          const img = new Image();
-          img.src = `data:${mime};base64,${base64}`;
-          await img.decode();
-          if (img.naturalWidth * img.naturalHeight > 100_000_000)
-            throw Error("Image dimensions are too large");
-          return { width: img.naturalWidth, height: img.naturalHeight };
-        },
-        { base64: bytes.toString("base64"), mime },
-      );
+      if (media) dimensions = media;
+      else {
+        const page = await b!.newPage();
+        dimensions = await page.evaluate(
+          async ({ base64, mime }) => {
+            const img = new Image();
+            img.src = `data:${mime};base64,${base64}`;
+            await img.decode();
+            if (img.naturalWidth * img.naturalHeight > 100_000_000)
+              throw Error("Image dimensions are too large");
+            return { width: img.naturalWidth, height: img.naturalHeight };
+          },
+          { base64: bytes.toString("base64"), mime },
+        );
+      }
     } finally {
-      await b.close();
+      await b?.close();
     }
     const task = (this.chains.get(id) || Promise.resolve())
       .catch(() => {})
@@ -105,8 +118,13 @@ export class Assets {
         const s = await this.root(id);
         if (s.readOnly) throw Error("Project is read only");
         const existing = await this.list(id);
-        if (existing.some((a) => a.sha === sha))
-          return existing.find((a) => a.sha === sha)!;
+        const duplicate = existing.find(
+          (a) =>
+            a.sha === sha &&
+            a.kind === kind &&
+            JSON.stringify(a.provenance) === JSON.stringify(provenance),
+        );
+        if (duplicate) return duplicate;
         const temp = path.join(os.tmpdir(), "bip-asset-" + randomUUID());
         await fs.writeFile(temp, bytes);
         try {
@@ -124,7 +142,14 @@ export class Assets {
         });
         await atomicJsonWrite(
           await safeFile(s.root, "assets/index.json"),
-          Object.fromEntries([...existing, item].map((a) => [a.sha, a])),
+          Object.fromEntries(
+            [...existing, item].map((a) => [
+              a.sha +
+                "-" +
+                hash(Buffer.from(JSON.stringify([a.kind, a.provenance]))),
+              a,
+            ]),
+          ),
         );
         return item;
       });

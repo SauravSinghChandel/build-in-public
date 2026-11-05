@@ -5,6 +5,7 @@ import path from "node:path";
 import net from "node:net";
 import { chromium } from "playwright";
 import type { AgentStatus, Check, DoctorReport } from "@bip/shared";
+import { browserPath, hyperframes } from "./video/process.js";
 import { binaryFor } from "./config.js";
 const exec = promisify(execFile);
 export async function agents(): Promise<AgentStatus[]> {
@@ -68,6 +69,7 @@ export async function doctor(
   for (const [binary, args, hint] of [
     ["git", ["--version"], "Install Git"],
     ["ffmpeg", ["-version"], "Install FFmpeg"],
+    ["ffprobe", ["-version"], "Install FFmpeg including ffprobe"],
   ] as const) {
     const ok = await exec(binary, [...args], { timeout: 10000 })
       .then(() => true)
@@ -82,6 +84,23 @@ export async function doctor(
       .catch(() => false),
     hard: true,
     hint: "Run pnpm exec playwright install chromium",
+  });
+  checks.push({
+    name: "HyperFrames 0.9.13",
+    ok: await hyperframes(["--version"], home, home)
+      .then((s) => s.includes("0.9.13"))
+      .catch(() => false),
+    hard: true,
+    hint: "Run pnpm install",
+  });
+  checks.push({
+    name: "HyperFrames Chromium",
+    ok: await fs
+      .access(browserPath())
+      .then(() => true)
+      .catch(() => false),
+    hard: true,
+    hint: "Set chromiumPath in BIP config or install Playwright Chromium",
   });
   for (const a of await agents())
     checks.push({

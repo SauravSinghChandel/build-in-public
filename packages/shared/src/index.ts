@@ -279,10 +279,21 @@ export const ImagePreset = z.enum([
 ]);
 export const CaptureStep = z
   .strictObject({
-    action: z.enum(["click", "type", "scroll", "hover", "wait", "press"]),
+    action: z.enum([
+      "click",
+      "type",
+      "scroll",
+      "hover",
+      "wait",
+      "press",
+      "pause",
+      "scrollTo",
+    ]),
     selector: z.string().max(1000).optional(),
     text: z.string().max(10000).optional(),
     value: z.union([z.string().max(1000), z.number().finite()]).optional(),
+    y: z.number().finite().optional(),
+    durationMs: z.number().int().min(1).max(30000).optional(),
     ms: z.number().int().min(0).max(30000).optional(),
   })
   .superRefine((s, c) => {
@@ -290,6 +301,22 @@ export const CaptureStep = z
       c.addIssue({ code: "custom", message: "This action needs a selector" });
     if (s.action === "type" && s.text === undefined)
       c.addIssue({ code: "custom", message: "Type needs text" });
+    if (s.action === "pause" && s.ms === undefined)
+      c.addIssue({ code: "custom", message: "Pause needs ms" });
+    if (
+      s.action === "scrollTo" &&
+      ((!s.selector && s.y === undefined) || s.durationMs === undefined)
+    )
+      c.addIssue({
+        code: "custom",
+        message: "scrollTo needs selector or y and durationMs",
+      });
+    if (
+      s.action === "scroll" &&
+      s.value !== undefined &&
+      !Number.isFinite(Number(s.value))
+    )
+      c.addIssue({ code: "custom", message: "Scroll needs numeric value" });
     if (s.action === "press" && typeof s.value !== "string")
       c.addIssue({ code: "custom", message: "Press needs a key value" });
   });
@@ -310,10 +337,36 @@ export const CaptureInput = z.strictObject({
 });
 export const Asset = z.object({
   sha,
-  kind: z.enum(["screenshot", "upload", "image_render"]),
-  mime: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  kind: z.enum([
+    "screenshot",
+    "upload",
+    "image_render",
+    "recording",
+    "event_log",
+    "scene_log",
+    "video_render",
+    "contact_sheet",
+  ]),
+  mime: z.enum([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "video/mp4",
+    "video/quicktime",
+    "video/webm",
+    "application/json",
+  ]),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
+  durationMs: z.number().positive().optional(),
+  hasAudio: z.boolean().optional(),
+  quality: z
+    .object({
+      effectiveFps: z.number(),
+      maxGapMs: z.number(),
+      choppy: z.boolean(),
+    })
+    .optional(),
   createdAt: stamp,
   provenance: z.discriminatedUnion("type", [
     z.object({
@@ -328,9 +381,32 @@ export const Asset = z.object({
     }),
     z.object({ type: z.literal("upload"), filename: z.string() }),
     z.object({
+      type: z.literal("video_capture"),
+      url: z.string(),
+      steps: z.array(CaptureStep),
+      eventLogSha: sha,
+    }),
+    z.object({
+      type: z.literal("video_import"),
+      filename: z.string(),
+      scenesSha: sha,
+    }),
+    z.object({
+      type: z.literal("video_still"),
+      recordingSha: sha,
+      timeMs: z.number().nonnegative(),
+    }),
+    z.object({
+      type: z.literal("recording_log"),
+      filename: z.enum(["events.json", "scenes.json"]),
+    }),
+    z.object({
       type: z.literal("render"),
       compositionId: z.string(),
       commit: z.string(),
+      variant: z.string().optional(),
+      frameHash: z.string().optional(),
+      hashFrame: z.number().int().nonnegative().optional(),
     }),
   ]),
 });
@@ -369,4 +445,77 @@ export interface CompositionView {
   revisions: ImageRevision[];
   previewUrl: string;
   fidelity?: { pass: boolean; errors: string[]; diffs?: unknown[] };
+}
+
+export const VideoCaptureInput = z.strictObject({
+  url: CaptureInput.shape.url,
+  viewport: CaptureInput.shape.viewport,
+  steps: z.array(CaptureStep).max(50),
+  approved: z.literal(true),
+  storyId: z.uuid().optional(),
+});
+export const VideoScene = z
+  .strictObject({
+    id: z.string().min(1).max(100),
+    kind: z.enum(["title", "recording", "still", "outro"]),
+    startMs: z.number().nonnegative(),
+    endMs: z.number().positive(),
+    sourceSha: sha.optional(),
+    notes: z.string().max(2000),
+  })
+  .refine((s) => s.endMs > s.startMs, "Scene must end after start")
+  .refine(
+    (s) => s.kind !== "recording" || !!s.sourceSha,
+    "Recording scene needs a source",
+  );
+export const VideoCaption = z
+  .strictObject({
+    text: z.string().max(1000),
+    startMs: z.number().nonnegative(),
+    endMs: z.number().positive(),
+  })
+  .refine((s) => s.endMs > s.startMs, "Caption must end after start");
+export const VideoComposition = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    id: z.uuid(),
+    type: z.literal("video"),
+    title: z.string().max(200),
+    fps: z.literal(30),
+    durationMs: z.number().min(100).max(600000),
+    style: z.enum(["clean", "technical"]),
+    sources: z.array(sha).min(1).max(30),
+    storyId: z.uuid().optional(),
+    scenes: z.array(VideoScene).min(1).max(100),
+    captions: z.array(VideoCaption).max(100),
+  })
+  .superRefine((v, c) => {
+    for (const s of [...v.scenes, ...v.captions])
+      if (s.endMs > v.durationMs)
+        c.addIssue({
+          code: "custom",
+          message: "Scene/caption exceeds duration",
+        });
+    for (const s of v.scenes)
+      if (s.sourceSha && !v.sources.includes(s.sourceSha))
+        c.addIssue({ code: "custom", message: "Scene source is not declared" });
+    if (new Set(v.scenes.map((s) => s.id)).size !== v.scenes.length)
+      c.addIssue({ code: "custom", message: "Duplicate scene id" });
+  });
+export type VideoCompositionData = z.infer<typeof VideoComposition>;
+export interface VideoRevision extends ImageRevision {
+  diffStat: string;
+  largeChange: boolean;
+  contactSha?: string;
+  previewSha?: string;
+  finalSha?: string;
+  squareSha?: string;
+  verticalSha?: string;
+}
+export interface VideoView {
+  composition: VideoCompositionData;
+  commit: string;
+  revisions: VideoRevision[];
+  clicks: { t: number; x: number; y: number }[];
+  choppy: boolean;
 }

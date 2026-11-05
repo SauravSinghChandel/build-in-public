@@ -51,3 +51,8 @@ Worktree/branch: see "Environment" at the end. **Do not commit or push.** Don't 
 
 ## Deliverable
 `M4-RESULT.md` at the repo root, ≤ 50 lines.
+
+## Environment
+- Worktree `/home/justbuster/projects/build-in-public-m4`, branch `m4-video-studio` (already checked out). Install with `npx --yes pnpm@10.34.9 install`.
+- Same notes as earlier milestones: `tsx`/`tsc`, cached Playwright Chromium (`chromiumSandbox: false` in tests if needed), fake agents via `BIP_CLAUDE_BIN`/`BIP_CODEX_BIN` for all tests, and `agentSchema()` for agent JSON Schemas. Real agent CLIs can't run in your sandbox; the reviewer runs the live smoke test.
+- The video spike's HyperFrames project is at `spikes/video/hyperframes/` (its `node_modules` aren't committed; install HyperFrames fresh as a workspace dependency).

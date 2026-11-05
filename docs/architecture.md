@@ -79,3 +79,72 @@ The four bundled presets derive from the spike's responsive launch layout and us
 Agent edits run in fresh app-data workspaces, with read-only source copies and no user-repository cwd. Allowed files and sizes, protected metadata, original/copy hashes, CSS source styles, text overlap and pixel fidelity are checked before copy-back and commit. Failed edits preserve the previous revision. The calibrated pixel limit remains 3%; the reference now uses a clean Chromium image at the identical fractional box, avoiding the spike's canvas-vs-CSS resampling error on fine UI detail. The explicit screenshot-edit override bypasses visual checks, never source hashes or overflow checks.
 
 Capture jobs use fresh Chromium contexts without application cookies. Agent step generation returns JSON for review; the UI requires explicit approval before running generated steps. Export checks fidelity again, downloads DPR-2 PNG or quality-90 JPEG, and retains the render as an asset. Posts store image SHA/alt pairs, clear approval on attachment changes, and expose download/copy actions in the publish sheet. All automated agent runs use the fake CLI; live Claude/Codex behavior remains a reviewer smoke test.
+
+## M4 Video Studio
+
+HyperFrames is an exact workspace dependency at **0.9.13**. BIP compositions use
+its deterministic CSS/WAAPI adapters and `data-no-timeline`; there is no authored
+GSAP dependency. The video validator rejects GSAP/`__timelines`, external URLs,
+unsafe resources, symlinks, oversized files and undeclared files before running
+HyperFrames `lint --json` against a disposable project with verified source copies.
+The BIP video-editor skill overrides HyperFrames's GSAP advice and is supplied
+as the final skill content in edit prompts. Render staging also injects a trusted
+CSP restricting resource requests to the render origin and disabling connections,
+forms, frames and base URLs. Agents never execute the renderer or use a user repo
+as their working directory.
+
+`video/` owns CDP capture, timing models, authoring, lint/snapshot/render orchestration
+and authenticated routes under `/api/projects/:id/video`. CDP JPEG frames and
+injected pointer/click/scroll/navigation events share the browser's epoch clock;
+action starts and completions are measured too. FFmpeg assembles the delivered
+frames with their durations into H.264 CFR 30. Effective delivered fps and maximum
+frame gap include recording boundaries; <12 fps or >500 ms is advisory “Choppy”.
+No frame interpolation is claimed. Capture waits for network idle and fonts,
+hides native/site cursor overlays and runs only explicitly approved steps in a
+fresh context. Imports accept MP4/MOV/WebM up to 500 MiB, probe the container and
+video stream, and store FFmpeg scene changes at threshold 0.3 instead of an event log.
+
+Recordings, event/scene JSON, contact sheets and video exports use the existing
+content-addressed asset bytes. Metadata can retain several provenance records for
+the same SHA (for example, identical renders at different commits or an imported
+render); old SHA-keyed indexes remain readable. Media pickers deduplicate by SHA.
+Video responses support byte ranges. Events/scenes link from recording provenance.
+
+Video compositions remain internal Git repositories alongside image compositions;
+listing filters by type. Four editable files are admitted: composition.json,
+index.html, styles.css and optional motion.js. The JSON scene/caption model generates
+HTML when slots change; a content hash distinguishes canonical from custom markup.
+Caption edits patch custom slots in place; agents must update custom HTML with
+metadata changes. BIP refuses to overwrite a custom layout. HTML/CSS changes are retained across renders and restores. Original source hashes and protected identity/source metadata gate agent
+copy-back. Source copies are read-only, Codex receives the contact sheet with `-i`,
+and Claude is prompted to Read the image. Each revision exposes git diff statistics;
+small instructions affecting >3 files or >200 added/deleted lines are flagged.
+
+Clean uses title/outro cards, two captions, a synthetic cursor/ripple, measured click
+zooms (.4 s pre-roll, .35 s hold, .65 s return), both-axis centring with edge clamping,
+and a 2× ramp on the longest measured scroll segment. Technical adds a terminal
+card and an annotated still derived from the source. Image sources use slow pan/zoom, per-still captions
+and fades. Imported audio is retained through HyperFrames media-audio clips. Responsive layout preserves footage aspect ratio at all export sizes.
+
+Each revision queues separate contact-sheet and preview jobs through M2's durable
+queue. HyperFrames `snapshot` samples twelve times; FFmpeg tiles the PNGs. Preview
+is 960×540/30/CRF 30. Final variants are 1920×1080, 1080 square and 1080×1920 at
+30 fps/CRF 20, H.264 + AAC, faststart; silence is added only when needed. Outputs
+are cached by composition, commit and variant, with decoded frame 150 hashed for
+repeat comparisons (the final available frame for videos shorter than 151 frames).
+The hash and actual frame index are retained in render provenance; forced repeat
+mismatches emit warnings. Videos above 140 seconds show X's duration warning.
+
+Set `chromiumPath` and `videoConfigHome` in BIP config to override the cached
+Chromium and writable HyperFrames config directory. `HYPERFRAMES_BROWSER_PATH`
+is also respected; otherwise BIP checks Playwright's executable then the browser
+cache. HyperFrames receives that path and a writable XDG_CONFIG_HOME explicitly.
+Doctor checks the pinned CLI, cached Chromium, FFmpeg and ffprobe. In this sandbox,
+run tests with `XDG_CONFIG_HOME=/tmp/bip-m4/config` (create it first); Chromium's
+crash handler otherwise encounters the read-only desktop config directory.
+
+The story action launches capture/import/image selection into a full-screen editor.
+The timeline is read-only; scene/caption/click markers seek the frame scrubber.
+Caption edits create direct revisions. Final render attachments invalidate post
+approval and appear as video chips with downloads in the assisted publish sheet.
+Automated agent edits use only fixture CLIs; real Claude/Codex smoke is a reviewer step.
