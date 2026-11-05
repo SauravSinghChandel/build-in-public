@@ -6,6 +6,8 @@ export async function start() {
   await ensureConfig();
   const service = createApp({ port: appPort() });
   await service.projects.rescan();
+  // Scheduled posts only go out while BIP runs (or via `bip publish-due`).
+  service.publisher.start();
   const server = serve(
     { fetch: service.app.fetch, hostname: "127.0.0.1", port: service.port },
     () => {

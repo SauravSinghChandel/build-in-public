@@ -416,7 +416,7 @@ describe("Store, registry and migrations", () => {
     first
       .prepare("INSERT INTO tracked_dirs(id,path,depth) VALUES(?,?,?)")
       .run(randomUUID(), root, 2);
-    expect(first.pragma("user_version", { simple: true })).toBe(2);
+    expect(first.pragma("user_version", { simple: true })).toBe(3);
     first.close();
     const second = openDatabase(home);
     expect(second.prepare("SELECT * FROM tracked_dirs").all()).toHaveLength(1);
@@ -427,7 +427,7 @@ describe("Store, registry and migrations", () => {
     const legacy = new old.default(path.join(root, "upgrade/app.db"));
     legacy.close();
     const upgraded = openDatabase(path.join(root, "upgrade"));
-    expect(upgraded.pragma("user_version", { simple: true })).toBe(2);
+    expect(upgraded.pragma("user_version", { simple: true })).toBe(3);
     upgraded.close();
     expect(
       (await fs.readdir(path.join(root, "upgrade"))).some((f) =>

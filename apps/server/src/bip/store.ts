@@ -621,6 +621,8 @@ export async function openProject(repoPath: string) {
                   ? "thread"
                   : "post",
             approvedRevisionId: undefined,
+            // Editing clears approval and unschedules (M5).
+            scheduledAt: undefined,
             status: "draft",
           });
           const storyPath = await safe(

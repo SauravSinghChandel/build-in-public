@@ -227,6 +227,7 @@ export function imageRoutes(app: Hono, studio: ImageStudio) {
       await s.updatePost(c.req.param("storyId")!, c.req.param("postId")!, {
         media: b.media,
         approvedRevisionId: undefined,
+        scheduledAt: undefined,
         status: "draft",
       }),
     );

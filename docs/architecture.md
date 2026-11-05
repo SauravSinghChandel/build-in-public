@@ -148,3 +148,62 @@ The timeline is read-only; scene/caption/click markers seek the frame scrubber.
 Caption edits create direct revisions. Final render attachments invalidate post
 approval and appear as video chips with downloads in the assisted publish sheet.
 Automated agent edits use only fixture CLIs; real Claude/Codex smoke is a reviewer step.
+
+## M5 Accounts, direct publishing and scheduling
+
+Direct publishing is optional; with no accounts the M2 assisted flow is unchanged.
+
+**Accounts setup.** Settings → Accounts shows, per platform, a short guide, the exact
+redirect URI to register (`http://127.0.0.1:<port>/oauth/<platform>/callback`) and the
+scopes. X: create an app in the X developer portal, enable OAuth 2.0 with read and write,
+scopes `tweet.read tweet.write users.read media.write offline.access`; a client secret is
+only needed for confidential clients. X bills per request (see X's pricing page).
+LinkedIn: create an app, add "Sign In with LinkedIn using OpenID Connect" and "Share on
+LinkedIn", scopes `openid profile w_member_social`; the client secret is required.
+LinkedIn tokens last ~60 days; the UI shows "Reconnect by <date>" and warns 7 days ahead.
+
+**OAuth.** X uses Authorization Code + PKCE (S256); LinkedIn uses Authorization Code.
+`state` is 32 random bytes, kept in memory, single-use, expires after 10 minutes and is
+bound to the starting browser by an HttpOnly `SameSite=Lax` cookie scoped to
+`/oauth/<platform>`. `/oauth/:platform/callback` is the only unauthenticated route; the
+global Host check still applies. Callback errors redirect to Settings with a message.
+
+**Secrets.** `publishing/secrets.ts` defines a small `SecretStore`. The OS keychain
+(`@napi-rs/keyring`, service `build-in-public`, account `<platform>:<accountId>:<kind>`;
+the app client secret uses `<platform>:app:client_secret`) is used when a probe
+round-trip works; otherwise an AES-256-GCM file `<appdata>/secrets.enc` with a 0600 key
+file `<appdata>/secrets.key`, and Settings warns that this protects only against casual
+reads. `BIP_SECRET_STORE=file|keychain` forces a backend. The store is chosen lazily;
+`GET /api/accounts?metadata=1` (used by the publish sheet) never touches it. SQLite
+`platform_apps`/`accounts` hold only client ids, handles, scopes, expiry and
+`keychain_ref`. Platform error text passes through a scrubber that removes live token
+values and bearer/token patterns before it reaches job errors, post errors or responses.
+Disconnect revokes (both platforms support it), deletes secrets and the row.
+
+**Publishing.** `publish` jobs (`resource_key post:<id>`) run on the M2 runner. The job
+requires `approvedRevisionId === currentRevisionId === payload.revisionId` at start and
+again right before every create-post call. Media upload first (X: simple upload for
+images plus alt text, chunked initialize/append/finalize with STATUS polling for video;
+LinkedIn: Images/Videos API with multipart PUT and finalize), then posts (X threads reply
+to the previous part; LinkedIn Posts API with `LinkedIn-Version` and
+`X-Restli-Protocol-Version: 2.0.0`). Every returned id is persisted to `externalIds`
+before anything else; parts that have ids are never re-sent, so Retry continues a thread
+and a crash after success can't double-post. 429 waits for `x-rate-limit-reset` or
+`Retry-After` with exponential backoff (waits over 5 minutes fail with "try again after");
+uploads and status polls also retry 5xx, timeouts (60 s) and network errors; max 3
+retries. Create-post calls (X post, LinkedIn post) are **never** retried after a 5xx,
+timeout or network error: the post (or thread part) gets status `uncertain` ("May have
+posted", "Check your profile before retrying"). The user either pastes the live link
+("It posted": recorded like an API success; threads continue from the next part) or
+chooses "Retry anyway" (confirm; `retryUncertain`), which sends exactly one more create.
+Plain job Resume, Post now and the scheduler refuse uncertain posts. LinkedIn videos are
+polled (`GET /rest/videos/{urn}`) until AVAILABLE (fails on PROCESSING_FAILED or after
+~5 minutes) before the post is created. 401 → reconnect, 403 → missing permission. Success sets
+`published`, `publishedUrl`, `publishedAt` and applies the M2 marker rule. Base URLs are
+configurable (`BIP_X_API_BASE`, `BIP_X_AUTH_BASE`, `BIP_LINKEDIN_API_BASE`,
+`BIP_LINKEDIN_AUTH_BASE`, `BIP_LINKEDIN_VERSION`); tests use `tests/mocks/platforms.ts`.
+
+**Scheduling.** See `docs/scheduling.md`. The in-process scheduler (30 s,
+`BIP_SCHEDULER_INTERVAL_MS`) enqueues posts at most 2 minutes late; later ones are
+Overdue and wait for the user. It also releases posts left in `publishing` by a stopped
+job. `BIP_TEST_CLOCK_OFFSET_MS` shifts the server clock for end-to-end tests only.
