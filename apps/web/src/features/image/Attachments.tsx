@@ -137,6 +137,30 @@ export function Attachments({ p, post }: { p: ProjectRow; post: PostData }) {
     </div>
   );
 }
+export const canCopyImage = () =>
+  typeof ClipboardItem !== "undefined" && !!navigator.clipboard?.write;
+/** Copies an attached image to the clipboard as PNG (the only image type clipboards reliably accept). */
+export async function copyImage(project: string, sha: string) {
+  let blob = await (await fetch(assetUrl(project, sha))).blob();
+  if (blob.type !== "image/png") {
+    const bitmap = await createImageBitmap(blob),
+      canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) =>
+          b
+            ? resolve(b)
+            : reject(Error("Couldn't copy the image. Use Download image instead.")),
+        "image/png",
+      ),
+    );
+  }
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+}
 export function PublishImages({
   project,
   post,
@@ -177,35 +201,10 @@ export function PublishImages({
               >
                 Download image
               </a>
-              {typeof ClipboardItem !== "undefined" &&
-                navigator.clipboard?.write && (
+              {canCopyImage() && (
                   <Button
                     onClick={() =>
-                      void fetch(assetUrl(project, m.sha))
-                        .then((r) => r.blob())
-                        .then(async (blob) => {
-                          // Clipboard APIs generally accept PNG only; convert JPEG/WebP through a canvas.
-                          const bitmap = await createImageBitmap(blob),
-                            canvas = document.createElement("canvas");
-                          canvas.width = bitmap.width;
-                          canvas.height = bitmap.height;
-                          canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
-                          bitmap.close();
-                          const png = await new Promise<Blob>(
-                            (resolve, reject) =>
-                              canvas.toBlob(
-                                (b) =>
-                                  b
-                                    ? resolve(b)
-                                    : reject(Error("Couldn't copy the image. Use Download image instead.")),
-                                "image/png",
-                              ),
-                          );
-                          await navigator.clipboard.write([
-                            new ClipboardItem({ "image/png": png }),
-                          ]);
-                        })
-                        .catch(message)
+                      void copyImage(project, m.sha).catch(message)
                     }
                   >
                     Copy image

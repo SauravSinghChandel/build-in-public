@@ -1,0 +1,192 @@
+@font-face { font-family: 'IBM Plex Sans'; src: url('plex.woff2'); }
+* { box-sizing: border-box; }
+:root {
+  --accent: #e8b04b;
+  --padding: 48px;
+  --shadow: .4;
+  --base: #07080c;
+  --cool: #4f5bd5;
+  --ink: #f7f5f2;
+  --muted: #a9adb8;
+  color-scheme: dark;
+}
+html, body { margin: 0; width: 100%; height: 100%; }
+body {
+  font-family: 'IBM Plex Sans', Arial, sans-serif;
+  color: var(--ink);
+  background: var(--base);
+  overflow: hidden;
+}
+
+/* Backdrop: accent light from the upper left, a cool counter-light low right, a faint grid. */
+body[data-background=radial], body[data-background=noise] {
+  background:
+    radial-gradient(60% 75% at 8% 0%, color-mix(in srgb, var(--accent) 42%, transparent), transparent 70%),
+    radial-gradient(55% 70% at 100% 100%, color-mix(in srgb, var(--cool) 46%, transparent), transparent 72%),
+    radial-gradient(40% 50% at 70% 35%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    var(--base);
+}
+body[data-background=noise] .canvas { background-image: url('noise.svg'); }
+body[data-background=solid] { background: #111318; }
+body[data-background=dominant] {
+  background:
+    radial-gradient(70% 80% at 10% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+    var(--dominant, #1a1f27);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(#ffffff0a 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 45%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 70% at 60% 45%, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+body[data-background=solid]::before { display: none; }
+
+.canvas {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  padding: var(--padding);
+  display: grid;
+  grid-template-columns: minmax(0, 34fr) minmax(0, 62fr);
+  gap: 40px;
+  align-items: center;
+}
+
+/* Copy */
+.copy { position: relative; min-width: 0; }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, white);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  line-height: 14px;
+}
+.eyebrow span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+h1 {
+  margin: 0 0 16px;
+  font-size: 44px;
+  line-height: 1.08;
+  letter-spacing: -1.6px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  background: linear-gradient(175deg, #ffffff 30%, color-mix(in srgb, var(--accent) 55%, white) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.subhead {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* Stage and glass frame. The screenshot itself has no transform, filter, opacity or overlay. */
+.stage {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.glow {
+  position: absolute;
+  right: 6%;
+  top: 18%;
+  width: 52%;
+  height: 64%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent);
+  pointer-events: none;
+}
+.browser-frame {
+  position: relative;
+  max-width: 100%;
+  padding: 0 6px 6px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff1f, #ffffff0a);
+  box-shadow:
+    inset 0 0 0 1px #ffffff26,
+    0 0 0 1px #00000066,
+    0 2px 0 -1px #ffffff40,
+    0 30px 70px -18px rgb(0 0 0 / calc(var(--shadow) + .35)),
+    0 40px 120px -40px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.browser-chrome {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+.dots { display: flex; gap: 6px; }
+.dots b { width: 9px; height: 9px; border-radius: 50%; background: #ffffff2e; }
+.dots b:first-child { background: #ff6159; }
+.dots b:nth-child(2) { background: #ffbd2e; }
+.dots b:nth-child(3) { background: #28c941; }
+.browser-chrome i {
+  flex: 1;
+  height: 14px;
+  max-width: 46%;
+  margin: 0 auto;
+  border-radius: 7px;
+  background: #ffffff14;
+}
+.browser-chrome span { width: 39px; }
+img[data-bip-source] {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+/* Frame options */
+body[data-frame=none] .browser-frame { padding: 0; background: none; border-radius: 0; }
+body[data-frame=none] .browser-chrome { display: none; }
+body[data-frame=none] img[data-bip-source] { border-radius: 0; }
+body[data-frame=window] .browser-chrome i { visibility: hidden; }
+body[data-frame=phone] .browser-frame { max-width: 300px; padding: 10px; border-radius: 34px; background: #16181d; }
+body[data-frame=phone] .browser-chrome { display: none; }
+body[data-frame=phone] img[data-bip-source] { border-radius: 24px; }
+
+/* Square and portrait: copy on top, screenshot below. */
+@media (max-aspect-ratio: 6/5) {
+  .canvas {
+    padding: calc(var(--padding) + 16px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 32px;
+    align-items: stretch;
+  }
+  h1 { font-size: 64px; letter-spacing: -2.4px; }
+  .subhead { font-size: 21px; max-width: 40ch; }
+  .eyebrow { font-size: 13px; padding: 8px 16px 8px 12px; }
+  .glow { left: 15%; right: auto; top: 45%; width: 70%; height: 50%; }
+  .browser-chrome { height: 36px; }
+  .dots b { width: 11px; height: 11px; }
+}
+@media (max-aspect-ratio: 9/10) {
+  h1 { font-size: 72px; }
+}
