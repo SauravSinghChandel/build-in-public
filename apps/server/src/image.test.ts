@@ -382,7 +382,7 @@ describe("Composition revisions and validation", () => {
     expect(failed.error).toContain("filter");
     expect((await s.images.view(id, idc)).commit).toBe(next.commit);
   }, 30000);
-  it("all four presets fit and export JPEG and PNG with provenance", async () => {
+  it("all presets fit and export JPEG and PNG with provenance", async () => {
     for (const preset of ["minimal", "technical", "comparison", "showcase"] as const) {
       const v = await comp(preset);
       for (const size of ["x", "linkedin", "square", "portrait"] as const) {

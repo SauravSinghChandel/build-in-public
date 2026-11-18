@@ -1,6 +1,12 @@
 {
   "name": "build-in-public",
   "version": "0.1.0",
+  "description": "A local web app that turns your Git commits into X and LinkedIn posts, images and demo videos, drafted with the Claude Code and Codex CLIs.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SauravSinghChandel/build-in-public.git"
+  },
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.9",

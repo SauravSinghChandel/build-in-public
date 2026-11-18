@@ -48,7 +48,7 @@ apps/server/            Hono API, CLI, job runner, adapters
     doctor.ts backup.ts
 apps/web/               React UI (routes/, features/, components/)
 packages/shared/        Zod schemas and API types shared by server and web
-packages/templates/     image presets (minimal, launch, technical, comparison) and video styles (clean, technical)
+packages/templates/     image presets (showcase, minimal, launch, technical, comparison) and video styles (clean, technical)
 agent-skills/           BIP's instructions to agents: post-writer, image-composer, video-editor
 tests/                  Playwright e2e specs, fake agent CLI and fixtures, X/LinkedIn mock
 spikes/                 M0 proof-of-concept code and results (reference only)
