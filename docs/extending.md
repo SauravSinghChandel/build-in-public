@@ -18,7 +18,7 @@ An image preset is a folder of static files that BIP copies into each new compos
 3. Add `<name>` to `ImagePreset` in `packages/shared/src/index.ts`.
 4. Add it to the preset lists in `apps/web/src/features/image/Media.tsx` (New image dialog) and `apps/web/src/features/image/Studio.tsx`, and add a picker thumbnail at `apps/web/public/presets/<name>.svg`.
 5. If the preset needs special defaults (two sources like `comparison`, or annotations like `technical`), add them in `ImageStudio.create()` and `update()` in `apps/server/src/image/studio.ts`.
-6. Add it to the "all four presets fit" test in `apps/server/src/image.test.ts`, which renders every preset at every canvas size (X 1200×675, LinkedIn 1200×627, square 1080×1080, portrait 1080×1350) and checks fidelity.
+6. Add it to the "all presets fit" test in `apps/server/src/image.test.ts`, which renders every preset at every canvas size (X 1200×675, LinkedIn 1200×627, square 1080×1080, portrait 1080×1350) and checks fidelity.
 
 Keep the screenshot element free of CSS filters, blend modes and overlapping text: the fidelity check rejects changes to the screenshot.
 

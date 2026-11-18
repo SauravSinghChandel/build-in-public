@@ -1,5 +1,12 @@
 # Build in Public
 
+[![CI](https://github.com/SauravSinghChandel/build-in-public/actions/workflows/ci.yml/badge.svg)](https://github.com/SauravSinghChandel/build-in-public/actions/workflows/ci.yml)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange.svg)
+
+> [!NOTE]
+> **Work in progress.** BIP is early (v0.1) and is itself being built in public: this repository is its own first project. The core flow works end to end on Linux, but expect rough edges and breaking changes, including to the `.bip/` data format. See [Status](#status) for what has and hasn't been tried for real.
+
 Build in Public (BIP) is a local web app that turns your recent Git work into posts for X and LinkedIn. It shows which commits you haven't talked about yet, drafts posts grounded in those commits and your project notes, makes polished screenshot images and short edited demo videos, and helps you publish them. It uses the Claude Code and Codex CLIs you already have installed and signed in to, keeps its data on your machine, and never posts anything you haven't approved.
 
 ![Project overview: unshared commits on the amber rail, three selected, with "Create story from 3 commits"](docs/media/overview.webp)
@@ -7,6 +14,10 @@ Build in Public (BIP) is a local web app that turns your recent Git work into po
 | Projects | Story editor | Image Studio |
 |---|---|---|
 | ![Projects list with the unshared commit count](docs/media/projects.webp) | ![Story editor with X and LinkedIn drafts side by side](docs/media/story.webp) | ![Image Studio with the launch preset around a screenshot](docs/media/image-studio.webp) |
+
+An image made with the showcase preset, from a real screenshot of BIP drafting its own first post:
+
+![Showcase preset: headline "My build-in-public tool just wrote its own first post" beside a framed screenshot of the BIP story editor](docs/media/showcase-example.webp)
 
 ## Quickstart
 
@@ -29,8 +40,8 @@ New here? `npx --yes pnpm@10.34.9 demo:create` makes a throwaway repo with a doz
 
 1. **Projects.** Add a folder (for example `~/projects`). BIP finds the Git repositories in it and you pick which ones to track. Each project shows how many commits you've made since your last post.
 2. **Stories.** On a project's Overview, select commits and choose "Create story". A story is one thing worth sharing. An agent proposes three angles, or you write your own.
-3. **Drafts, images, videos.** The agent writes an X post or thread and a LinkedIn post. Edit them yourself or ask for changes (Regenerate, Shorten, Expand, Tone, Adapt, Follow-up, or a free-form instruction); every change is a revision you can restore. Image Studio puts a screenshot into a preset layout. Video Studio records a scripted browser demo and edits it into an MP4 with click zooms and captions.
-4. **Publish.** Approve a draft, then copy it into X or LinkedIn yourself (the default), or post it directly through your own connected developer apps. Recording the published URL moves the project's "last shared" marker forward.
+3. **Drafts, images, videos.** The agent writes an X post or thread and a LinkedIn post. Edit them yourself or ask for changes (Regenerate, Shorten, Expand, Tone, Adapt, Follow-up, or a free-form instruction); every change is a revision you can restore. Image Studio puts a real screenshot into a preset layout (showcase, minimal, launch, technical or comparison) without altering its pixels. Video Studio records a scripted browser demo and edits it into an MP4 with click zooms and captions.
+4. **Publish.** Approve a draft, then publish it yourself (the default): "Open X" opens the composer with the text filled in and copies the attached image so you can paste it. Or post directly through your own connected developer apps, which uploads images for you. Recording the published URL moves the project's "last shared" marker forward.
 
 You choose Claude or Codex for each agent action.
 
@@ -71,6 +82,21 @@ App-level data (project registry, job queue, agent logs, backups) is in `~/.loca
 - [Platforms](docs/platforms.md): Linux, macOS and Windows notes
 - [Licences](docs/licenses.md): dependency licences
 - [Contributing](CONTRIBUTING.md), [Code of conduct](CODE_OF_CONDUCT.md), [Security policy](SECURITY.md)
+
+## Status
+
+BIP is a work in progress. What that means today:
+
+- **Covered by tests** (unit tests and Playwright end-to-end runs with recorded agent output and mocked platform APIs): project tracking, stories, drafts and revisions, Image Studio, Video Studio, assisted publishing, direct publishing and scheduling.
+- **Tried for real:** drafting posts with Claude Code on this repository, and making and exporting images.
+- **Not yet verified against the real services:** posting through the X and LinkedIn APIs, and macOS. Windows is not supported.
+- **Known gaps:**
+  - An agent run that stalls has no timeout; cancel it from Jobs.
+  - Agents run with your normal CLI configuration, including any MCP servers you have set up globally.
+  - Agent cost is recorded but not shown in the UI.
+  - Post-writing agent workspaces are not cleaned up after success.
+
+Bug reports and ideas are welcome in [issues](https://github.com/SauravSinghChandel/build-in-public/issues); see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 
