@@ -5,7 +5,9 @@ import { api } from "../../api";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { message, useRefresh } from "../../components/workspace";
-import { PublishImages } from "../image/Attachments";
+import { canCopyImage, copyImage, PublishImages } from "../image/Attachments";
+import { useAssets } from "../image/Media";
+import { toast } from "sonner";
 import { DirectPublish, useAccount } from "./DirectPublish";
 export function PublishSheet({
   pId,
@@ -64,6 +66,27 @@ export function PublishSheet({
     } finally {
       setBusy(false);
     }
+  };
+  const assets = useAssets(pId),
+    images = post.media.filter(
+      (m) =>
+        !assets.data?.some(
+          (a) => a.sha === m.sha && a.mime.startsWith("video/"),
+        ),
+    );
+  // X's intent URL carries text only, so put the first image on the clipboard before opening it.
+  const openX = async () => {
+    try {
+      await copyImage(pId, images[0].sha);
+      toast.success(
+        "Image copied. Click into the X composer and press Ctrl+V to attach it.",
+      );
+    } catch {
+      toast.error(
+        "Couldn't copy the image. Use Copy image or Download image above.",
+      );
+    }
+    window.open(intentUrl(revision.parts, "x"), "_blank", "noopener,noreferrer");
   };
   const openLinkedIn = async () => {
     try {
@@ -174,14 +197,30 @@ export function PublishSheet({
             <DirectPublish pId={pId} view={view} revision={revision} />
             {account && <h3>Or publish it yourself</h3>}
             {post.platform === "x" ? (
-              <a
-                className="button secondary"
-                target="_blank"
-                rel="noreferrer"
-                href={intentUrl(revision.parts, "x")}
-              >
-                Open X
-              </a>
+              <>
+                <a
+                  className="button secondary"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={intentUrl(revision.parts, "x")}
+                  onClick={(e) => {
+                    if (!images.length || !canCopyImage()) return;
+                    e.preventDefault();
+                    void openX();
+                  }}
+                >
+                  Open X
+                </a>
+                {images.length > 0 && (
+                  <p className="muted small">
+                    {canCopyImage()
+                      ? "Open X also copies the image. Press Ctrl+V in the X composer to attach it."
+                      : "Your browser can't copy images. Download the image above and attach it in X."}
+                    {images.length > 1 &&
+                      " Only the first image is copied; attach the others with Download image."}
+                  </p>
+                )}
+              </>
             ) : (
               <Button onClick={() => void openLinkedIn()}>Open LinkedIn</Button>
             )}

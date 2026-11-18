@@ -224,6 +224,25 @@ test("upload → launch image → revisions → square export → X draft attach
   for (const box of await publish.getByRole("checkbox").all())
     await box.check();
   await publish.getByRole("button", { name: "Approve", exact: true }).click();
+  // Open X carries text only, so it also puts the attached image on the clipboard.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page
+    .context()
+    .route("https://x.com/**", (r) => r.fulfill({ body: "<title>X</title>" }));
+  const popup = page.waitForEvent("popup");
+  await publish.getByRole("link", { name: "Open X", exact: true }).click();
+  const xTab = await popup;
+  await xTab.waitForLoadState();
+  expect(xTab.url()).toMatch(/^https:\/\/x\.com\/intent\/post\?text=/);
+  await xTab.close();
+  await expect(
+    page.getByText(
+      "Image copied. Click into the X composer and press Ctrl+V to attach it.",
+    ),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(async () => (await navigator.clipboard.read())[0].types),
+  ).toContain("image/png");
   await publish
     .getByLabel("Paste the published link")
     .fill("https://linkedin.com/posts/wrong-host");

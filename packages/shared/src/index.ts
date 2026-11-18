@@ -330,6 +330,7 @@ export const ImagePreset = z.enum([
   "launch",
   "technical",
   "comparison",
+  "showcase",
 ]);
 export const CaptureStep = z
   .strictObject({

@@ -348,7 +348,7 @@ export function ImageStudio({
                   ))}
                   <h2>Preset</h2>
                   <div className="preset-grid">
-                    {["minimal", "launch", "technical", "comparison"].map(
+                    {["showcase", "minimal", "launch", "technical", "comparison"].map(
                       (name) => (
                         <button
                           key={name}

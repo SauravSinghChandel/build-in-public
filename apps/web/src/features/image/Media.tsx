@@ -48,7 +48,7 @@ export function Media({
     [studio, setStudio] = useState(""),
     [source, setSource] = useState(""),
     [second, setSecond] = useState(""),
-    [preset, setPreset] = useState("launch"),
+    [preset, setPreset] = useState("showcase"),
     [busy, setBusy] = useState(false);
   const upload = async (file: File) => {
     setBusy(true);
@@ -233,7 +233,7 @@ export function Media({
                 role="radiogroup"
                 aria-labelledby="new-image-preset"
               >
-                {["minimal", "launch", "technical", "comparison"].map((v) => (
+                {["showcase", "minimal", "launch", "technical", "comparison"].map((v) => (
                   <button
                     type="button"
                     key={v}
